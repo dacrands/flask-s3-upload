@@ -1,0 +1,4 @@
+keys.txt
+__pycache__
+venv
+app.db
