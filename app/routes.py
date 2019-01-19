@@ -37,10 +37,12 @@ def login():
             return jsonify({'msg':'Invalid uername or password'})    
 
         login_user(user)
+        return jsonify({'msg':'Logged in'})
 
-    return jsonify({'msg':'Logged in'})
+    return jsonify({'msg':'Please log in'})
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
     return jsonify({'msg':'Logged out'})
@@ -80,3 +82,11 @@ def register():
         db.session.commit()
         
     return jsonify({'msg':'User added'})
+
+@app.route('/user', methods=['DELETE'])
+@login_required
+def delete_user():
+    db.session.delete(current_user)
+    db.session.commit()
+    
+    return jsonify({'msg': 'User deleted'})

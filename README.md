@@ -1,3 +1,3 @@
-# S3 File Uploader
+# Basic Flask Boilerplate
 
-- 
+Minimal Flask application with basic user authentication logic.
