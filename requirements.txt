@@ -1,8 +1,11 @@
 alembic==1.0.6
 bcrypt==3.1.6
+boto3==1.9.82
+botocore==1.12.82
 certifi==2018.11.29
 cffi==1.11.5
 Click==7.0
+docutils==0.14
 Flask==1.0.2
 Flask-Bcrypt==0.7.1
 Flask-Login==0.4.1
@@ -10,12 +13,15 @@ Flask-Migrate==2.3.1
 Flask-SQLAlchemy==2.3.2
 itsdangerous==1.1.0
 Jinja2==2.10
+jmespath==0.9.3
 Mako==1.0.7
 MarkupSafe==1.1.0
 pycparser==2.19
 python-dateutil==2.7.5
 python-editor==1.0.3
+s3transfer==0.1.13
 six==1.12.0
 SQLAlchemy==1.2.16
+urllib3==1.24.1
 Werkzeug==0.14.1
 wincertstore==0.2

@@ -1,21 +1,29 @@
+import re
+import os
+import boto3
+from botocore.exceptions import ClientError
 from flask import render_template, flash, redirect, url_for, request, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 
 from app import app, db
 from app.models import User
 
+s3 = boto3.resource('s3')
+s3_client = boto3.client('s3')
+
 MIN_USERNAME_LEN = 6
 MAX_USERNAME_LEN = 20
 MIN_PASSWORD_LEN = 12
 MAX_PASSWORD_LEN = 30
     
-    
-
 
 @app.route('/')
 @login_required
 def index():
-    return jsonify({'msg': 'This is a restricted page! {}'.format(current_user.username)})
+    return jsonify({
+        'msg': 'This is a restricted page! {}'
+                .format(current_user.username)
+        })
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -80,6 +88,8 @@ def register():
         user.set_password(password1)
         db.session.add(user)
         db.session.commit()
+
+        s3.Bucket(app.config['S3_BUCKET']).put_object(Key=user.username + '/')
         
     return jsonify({'msg':'User added'})
 
@@ -89,4 +99,10 @@ def delete_user():
     db.session.delete(current_user)
     db.session.commit()
     
+    s3_client.delete_object(Bucket=app.config['S3_BUCKET'], Key=current_user.username + '/')
     return jsonify({'msg': 'User deleted'})
+
+
+"""
+S3 LOGIC
+"""
