@@ -4,6 +4,14 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db
 from app.models import User
 
+MIN_USERNAME_LEN = 6
+MAX_USERNAME_LEN = 20
+MIN_PASSWORD_LEN = 12
+MAX_PASSWORD_LEN = 30
+    
+    
+
+
 @app.route('/')
 @login_required
 def index():
@@ -53,12 +61,18 @@ def register():
         except:
             return jsonify({'msg':'Missing part of your form'})
 
-        if password1 != password2:
-            return jsonify({'msg':'Passwords do not match'})
-        
         user = User.query.filter_by(username=username).first()
         if user:
             return jsonify({'msg':'Username already exists'})
+        if (len(username) < 8) or (len(username) > 20):
+            return jsonify({'msg':'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)})
+
+        password_len = max(len(password1), len(password2))
+        if  (password_len < 8) or (password_len > 20):
+            return jsonify({'msg':'Password  must be between {0} and {1} characters'.format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)})
+
+        if password1 != password2:
+            return jsonify({'msg':'Passwords do not match'})        
 
         user = User(username=username)
         user.set_password(password1)
