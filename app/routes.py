@@ -162,5 +162,18 @@ def files():
     return jsonify({'objects':file_urls})
 
         
-        
-        
+@app.route('/files/<file_name>', methods=['DELETE'])
+@login_required
+def delete_file(file_name):
+    files_req = s3_client.list_objects(
+        Bucket=app.config['S3_BUCKET'],
+        Prefix="{0}/".format(current_user.username)
+    )
+    for file in files_req['Contents']:
+        if file['Key'].split('/')[-1] == file_name:
+            s3_client.delete_object(
+            Bucket=app.config['S3_BUCKET'], 
+            Key='{0}/{1}'.format(current_user.username, file_name)
+            )
+            return jsonify({'msg': 'Successfully deleted {}'.format(file_name)})        
+    return jsonify({'msg': 'File not found'})
