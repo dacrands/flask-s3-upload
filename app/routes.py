@@ -7,7 +7,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import app, db
-from app.models import User
+from app.models import User, File
 
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
@@ -30,8 +30,8 @@ def allowed_file(filename):
 def index():
     return jsonify({
         'msg': 'This is a restricted page! {}'
-                .format(current_user.username)
-        })
+        .format(current_user.username)
+    })
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -54,9 +54,9 @@ def login():
             return jsonify({'msg': 'Invalid uername or password'})
 
         login_user(user)
-        return jsonify({'msg': 'Logged in'})
+        return jsonify({'username': current_user.username, 'msg': 'Logged in'})
 
-    return jsonify({'msg': 'Please log in'})
+    return jsonify({'msg': 'Please log in'}), 403
 
 
 @app.route('/logout')
@@ -124,56 +124,90 @@ S3 LOGIC
 @app.route('/files', methods=['GET', 'POST'])
 @login_required
 def files():
+    '''
+    Expects three form values:
+    - File Info
+    - File  
+    '''
     if request.method == 'POST':
-        if 'file' not in request.files:
-            return jsonify({'msg': 'missing file part'})
-        file = request.files['file']
+        try:
+            file_text = request.form['text']
+            file = request.files['file']
+        except:
+            return jsonify({'msg': 'Missing part of your form'})
+
         if file.filename == '':
             return jsonify({'msg': 'missing file name'})
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            key_str = "{0}/{1}".format(current_user.username, filename)
             s3.Bucket(app.config['S3_BUCKET']).put_object(
-                Key="{0}/{1}".format(current_user.username, filename),
+                Key=key_str,
                 Body=request.files['file'].stream.read()
             )
+            # ADD A NEW FILE
+            new_file = File(name=filename, body=file_text,
+                            key=key_str, author=current_user)
+            db.session.add(new_file)
+            db.session.commit()
+
         return jsonify({'msg': 'Uploaded {0}'.format(filename)})
 
-    files_req = s3_client.list_objects(
-        Bucket=app.config['S3_BUCKET'],
-        Prefix="{0}/".format(current_user.username)
-    )
+    print([(file.key, file.id) for file in current_user.files])
+    user_files = [{'name': file.name, 'body': file.body, "id": file.id}
+                  for file in current_user.files]
 
-    # First object is empty, so index at 1
-    file_urls = []
-    for file in files_req['Contents'][1:]:
-        url = s3_client.generate_presigned_url(
+    return jsonify({'files': user_files})
+
+
+@app.route('/files/<file_id>')
+@login_required
+def file(file_id):
+    file = File.query.filter_by(id=file_id).first()
+    if not file:
+        return jsonify({'msg': 'File does not exist'})
+
+    try:
+        res_object = s3_client.get_object(
+            Bucket=app.config['S3_BUCKET'],
+            Key=file.key
+        )
+    except ClientError:
+        return jsonify({'msg': 'File note in your folder'})
+
+    url = s3_client.generate_presigned_url(
         ClientMethod='get_object',
         Params={
             'Bucket': app.config['S3_BUCKET'],
-            'Key': file['Key'],
-            }
-        )
-        file_dict = {
-            'name': file['Key'].split('/')[-1],
-            'link': url,
+            'Key': file.key,
         }
-        file_urls.append(file_dict)
-
-    return jsonify({'objects':file_urls})
-
-        
-@app.route('/files/<file_name>', methods=['DELETE'])
-@login_required
-def delete_file(file_name):
-    files_req = s3_client.list_objects(
-        Bucket=app.config['S3_BUCKET'],
-        Prefix="{0}/".format(current_user.username)
     )
-    for file in files_req['Contents']:
-        if file['Key'].split('/')[-1] == file_name:
-            s3_client.delete_object(
-            Bucket=app.config['S3_BUCKET'], 
-            Key='{0}/{1}'.format(current_user.username, file_name)
-            )
-            return jsonify({'msg': 'Successfully deleted {}'.format(file_name)})        
-    return jsonify({'msg': 'File not found'})
+    file_dict = {
+        'url': url,
+        'size': res_object['ResponseMetadata']['HTTPHeaders']['content-length'],
+        'date': res_object['ResponseMetadata']['HTTPHeaders']['last-modified'],
+        'id': res_object['ResponseMetadata']['RequestId'],
+    }
+    
+    return jsonify({'file' : file_dict})
+
+
+@app.route('/files/<file_id>/delete', methods=['DELETE'])
+@login_required
+def delete_file(file_id):
+    file = File.query.filter_by(id=file_id).first()
+    if not file:
+        return jsonify({'msg': 'File does not exist'})
+
+    try:
+        res_object = s3_client.delete_object(
+            Bucket=app.config['S3_BUCKET'],
+            Key=file.key
+        )
+    except ClientError:
+        return jsonify({'msg': 'File note in your folder'})
+
+    db.session.delete(file)
+    db.session.commit()
+    return jsonify({'msg': 'File removed'})
