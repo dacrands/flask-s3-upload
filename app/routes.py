@@ -46,17 +46,17 @@ def login():
             username = request.form['username']
             password = request.form['password']
         except:
-            return jsonify({'msg': 'Missing form information'})
+            return jsonify({'err': 'Missing form information'}), 400
 
         user = User.query.filter_by(username=username).first()
 
         if (not user) or (not user.check_password(password)):
-            return jsonify({'msg': 'Invalid uername or password'})
+            return jsonify({'err': 'Invalid username or password'}), 400
 
         login_user(user)
         return jsonify({'username': current_user.username, 'msg': 'Logged in'})
 
-    return jsonify({'msg': 'Please log in'}), 403
+    return jsonify({'err': 'Please log in'}), 403
 
 
 @app.route('/logout')
@@ -77,23 +77,24 @@ def register():
     if request.method == 'POST':
         try:
             username = request.form['username']
-            password1 = request.form['password1']
-            password2 = request.form['password2']
+            password1 = request.form['password']
+            password2 = request.form['passwordTwo']
         except:
-            return jsonify({'msg': 'Missing part of your form'})
+            return jsonify({'err': 'Missing part of your form'}), 400
 
         user = User.query.filter_by(username=username).first()
         if user:
-            return jsonify({'msg': 'Username already exists'})
+            return jsonify({'err': 'Username already exists'}), 400
         if (len(username) < 8) or (len(username) > 20):
-            return jsonify({'msg': 'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)})
+            return jsonify(
+                {'err': 'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)}), 400
 
         password_len = max(len(password1), len(password2))
         if (password_len < 8) or (password_len > 20):
-            return jsonify({'msg': 'Password  must be between {0} and {1} characters'.format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)})
+            return jsonify({'err': 'Password  must be between {0} and {1} characters'.format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)}), 400
 
         if password1 != password2:
-            return jsonify({'msg': 'Passwords do not match'})
+            return jsonify({'err': 'Passwords do not match'}), 400
 
         user = User(username=username)
         user.set_password(password1)
@@ -119,8 +120,6 @@ def delete_user():
 """
 S3 LOGIC
 """
-
-
 @app.route('/files', methods=['GET', 'POST'])
 @login_required
 def files():
@@ -134,11 +133,13 @@ def files():
             file_text = request.form['text']
             file = request.files['file']
         except:
-            return jsonify({'msg': 'Missing part of your form'})
+            return jsonify({'msg': 'Missing part of your form'}), 400
 
         if file.filename == '':
-            return jsonify({'msg': 'missing file name'})
+            return jsonify({'msg': 'missing file name'}), 400
 
+        if len(file_text) > 130:
+            return jsonify({'msg': 'File descriptiont must be less than 140 characters'}), 400
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             key_str = "{0}/{1}".format(current_user.username, filename)
@@ -154,10 +155,10 @@ def files():
 
         return jsonify({'msg': 'Uploaded {0}'.format(filename)})
 
-    print([(file.key, file.id) for file in current_user.files])
     user_files = [{'name': file.name, 'body': file.body, "id": file.id}
                   for file in current_user.files]
-
+    user_files.reverse()
+    
     return jsonify({'files': user_files})
 
 
@@ -187,7 +188,6 @@ def file(file_id):
         'url': url,
         'size': res_object['ResponseMetadata']['HTTPHeaders']['content-length'],
         'date': res_object['ResponseMetadata']['HTTPHeaders']['last-modified'],
-        'id': res_object['ResponseMetadata']['RequestId'],
     }
     
     return jsonify({'file' : file_dict})
