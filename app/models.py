@@ -24,6 +24,7 @@ class File(db.Model):
     name = db.Column(db.String(64), index=True)
     key = db.Column(db.String(64), index=True)    
     body = db.Column(db.String(140))
+    date = db.Column(db.String(140))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):

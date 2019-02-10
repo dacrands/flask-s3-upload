@@ -17,7 +17,7 @@ MAX_USERNAME_LEN = 20
 MIN_PASSWORD_LEN = 12
 MAX_PASSWORD_LEN = 30
 
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
 
 
 def allowed_file(filename):
@@ -85,6 +85,7 @@ def register():
         user = User.query.filter_by(username=username).first()
         if user:
             return jsonify({'err': 'Username already exists'}), 400
+
         if (len(username) < 8) or (len(username) > 20):
             return jsonify(
                 {'err': 'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)}), 400
@@ -127,33 +128,45 @@ def files():
     Expects three form values:
     - File Info
     - File  
-    '''
-    if request.method == 'POST':
+    '''    
+    if request.method == 'POST':        
+        print(request.form)        
         try:
             file_text = request.form['text']
             file = request.files['file']
+            file_date = request.form['date']
         except:
             return jsonify({'msg': 'Missing part of your form'}), 400
 
         if file.filename == '':
             return jsonify({'msg': 'missing file name'}), 400
 
+        file_names = [file.name for file in current_user.files]
+        if file.filename in file_names:
+            return jsonify({'msg': 'You already have a file with that name. File names must be unique'}), 400
+
         if len(file_text) > 130:
-            return jsonify({'msg': 'File descriptiont must be less than 140 characters'}), 400
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
+            return jsonify({'msg': 'File description must be less than 130 characters'}), 400
+
+        if not allowed_file(file.filename):            
+            return jsonify({'msg': 'Invalid file type'}), 400
+
+        if file:
+            filename = secure_filename(file.filename)            
             key_str = "{0}/{1}".format(current_user.username, filename)
             s3.Bucket(app.config['S3_BUCKET']).put_object(
                 Key=key_str,
                 Body=request.files['file'].stream.read()
             )
             # ADD A NEW FILE
-            new_file = File(name=filename, body=file_text,
+            new_file = File(name=filename, body=file_text, date=file_date,
                             key=key_str, author=current_user)
             db.session.add(new_file)
             db.session.commit()
 
-        return jsonify({'msg': 'Uploaded {0}'.format(filename)})
+            return jsonify({'msg': 'Uploaded {0}'.format(filename)})        
+
+        return jsonify({'msg': 'Something went wrong'}), 400        
 
     user_files = [{'name': file.name, 'body': file.body, "id": file.id}
                   for file in current_user.files]
@@ -186,12 +199,37 @@ def file(file_id):
     )
     file_dict = {
         'url': url,
-        'size': res_object['ResponseMetadata']['HTTPHeaders']['content-length'],
-        'date': res_object['ResponseMetadata']['HTTPHeaders']['last-modified'],
+        'body': file.body,
+        'date': file.date,
+        'size': res_object['ResponseMetadata']['HTTPHeaders']['content-length'],        
     }
     
     return jsonify({'file' : file_dict})
 
+@app.route('/files/<file_id>/edit', methods=['PATCH'])
+@login_required
+def edit_file(file_id):
+    file = File.query.filter_by(id=file_id).first()
+    if not file:
+        return jsonify({'msg': 'File does not exist'})
+    
+    if request.method == 'PATCH':
+        print(request.form)
+        try:
+            file_text = request.form['body']
+        except:
+            return jsonify({'err': 'Missing part of your form'}), 400
+
+        if len(file_text) > 130:
+            return jsonify({'msg': 'File description must be less than 140 characters'}), 400
+        
+        file.body = file_text
+        db.session.commit()
+        return jsonify({'msg': 'Filed edited!'})
+
+    return jsonify({'err': 'You can not do that'})
+        
+    
 
 @app.route('/files/<file_id>/delete', methods=['DELETE'])
 @login_required
