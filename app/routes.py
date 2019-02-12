@@ -2,12 +2,13 @@ import re
 import os
 import boto3
 from botocore.exceptions import ClientError
-from flask import render_template, flash, redirect, url_for, request, jsonify
+from flask import render_template, flash, redirect, url_for, request, jsonify, render_template
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import app, db
 from app.models import User, File
+from app.email import auth_email, reset_email
 
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
@@ -41,6 +42,19 @@ def login():
     - username
     - password
     '''
+    token = request.args.get('token')
+    
+    if token:
+        user_id = User.verify_email_token(token)        
+        if not user_id:
+            flash('That token is invalid. It may have expired. Please request a new one.')
+            return redirect(url_for('index'))
+        user = User.query.get(user_id)
+        user.is_verified = True
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for('index'))
+    
     if request.method == 'POST':
         try:
             username = request.form['username']
@@ -71,17 +85,21 @@ def register():
     '''
     Expects three form values:
     - username
+    - email
     - password1
     - password2
     '''
     if request.method == 'POST':
+        print(request.form)
         try:
             username = request.form['username']
-            password1 = request.form['password']
-            password2 = request.form['passwordTwo']
+            user_email = request.form['email']
+            password1 = request.form['password1']
+            password2 = request.form['password2']
         except:
             return jsonify({'err': 'Missing part of your form'}), 400
 
+        #TODO email validation
         user = User.query.filter_by(username=username).first()
         if user:
             return jsonify({'err': 'Username already exists'}), 400
@@ -97,10 +115,16 @@ def register():
         if password1 != password2:
             return jsonify({'err': 'Passwords do not match'}), 400
 
-        user = User(username=username)
+        user = User(username=username, email=user_email)
         user.set_password(password1)
         db.session.add(user)
         db.session.commit()
+        
+        token = user.get_email_token()
+        auth_email('welcome@justfiles.com',
+                    'Verify Your Account!',
+                    user.email,
+                    render_template('email/verify.html', token=token))
 
         s3.Bucket(app.config['S3_BUCKET']).put_object(Key=user.username + '/')
 
@@ -118,6 +142,8 @@ def delete_user():
     return jsonify({'msg': 'User deleted'})
 
 
+
+
 """
 S3 LOGIC
 """
@@ -130,7 +156,7 @@ def files():
     - File  
     '''    
     if request.method == 'POST':        
-        print(request.form)        
+                
         try:
             file_text = request.form['text']
             file = request.files['file']
