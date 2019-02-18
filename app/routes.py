@@ -43,9 +43,9 @@ def login():
     - password
     '''
     token = request.args.get('token')
-    
+
     if token:
-        user_id = User.verify_email_token(token)        
+        user_id = User.verify_email_token(token)
         if not user_id:
             flash('That token is invalid. It may have expired. Please request a new one.')
             return redirect(url_for('index'))
@@ -54,7 +54,7 @@ def login():
         db.session.commit()
         login_user(user)
         return redirect(url_for('index'))
-    
+
     if request.method == 'POST':
         try:
             username = request.form['username']
@@ -65,7 +65,15 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if (not user) or (not user.check_password(password)):
-            return jsonify({'err': 'Invalid username or password'}), 400
+            return jsonify({'err': 'Invalid username or password'}), 401
+
+        if not user.is_verified:
+            token = user.get_email_token()
+            auth_email('welcome@justfiles.com',
+                   'Verify Your Account!',
+                   user.email,
+                   render_template('email/verify.html', token=token))
+            return jsonify({'err': 'Please verify your account. We just sent another email'}), 401
 
         login_user(user)
         return jsonify({'username': current_user.username, 'msg': 'Logged in'})
@@ -99,15 +107,18 @@ def register():
         except:
             return jsonify({'err': 'Missing part of your form'}), 400
 
-        #TODO email validation
-        user = User.query.filter_by(username=username).first()
-        if user:
-            return jsonify({'err': 'Username already exists'}), 400
+        # TODO email validation
+        user_exists = User.query.filter_by(username=username).first(
+        ) or User.query.filter_by(email=user_email).first()
+        if user_exists:
+            return jsonify({'err': 'Username or email already exists'}), 400
 
         if (len(username) < 8) or (len(username) > 20):
             return jsonify(
                 {'err': 'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)}), 400
 
+        # TODO decide which order is better, validate len or match.
+        #     This order provides better UX, IMO
         password_len = max(len(password1), len(password2))
         if (password_len < 8) or (password_len > 20):
             return jsonify({'err': 'Password  must be between {0} and {1} characters'.format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)}), 400
@@ -119,12 +130,12 @@ def register():
         user.set_password(password1)
         db.session.add(user)
         db.session.commit()
-        
+
         token = user.get_email_token()
         auth_email('welcome@justfiles.com',
-                    'Verify Your Account!',
-                    user.email,
-                    render_template('email/verify.html', token=token))
+                   'Verify Your Account!',
+                   user.email,
+                   render_template('email/verify.html', token=token))
 
         s3.Bucket(app.config['S3_BUCKET']).put_object(Key=user.username + '/')
 
@@ -140,13 +151,13 @@ def delete_user():
     s3_client.delete_object(
         Bucket=app.config['S3_BUCKET'], Key=current_user.username + '/')
     return jsonify({'msg': 'User deleted'})
-
-
-
+ 
 
 """
 S3 LOGIC
 """
+
+
 @app.route('/files', methods=['GET', 'POST'])
 @login_required
 def files():
@@ -154,9 +165,9 @@ def files():
     Expects three form values:
     - File Info
     - File  
-    '''    
-    if request.method == 'POST':        
-                
+    '''
+    if request.method == 'POST':
+
         try:
             file_text = request.form['text']
             file = request.files['file']
@@ -174,11 +185,11 @@ def files():
         if len(file_text) > 130:
             return jsonify({'msg': 'File description must be less than 130 characters'}), 400
 
-        if not allowed_file(file.filename):            
+        if not allowed_file(file.filename):
             return jsonify({'msg': 'Invalid file type'}), 400
 
         if file:
-            filename = secure_filename(file.filename)            
+            filename = secure_filename(file.filename)
             key_str = "{0}/{1}".format(current_user.username, filename)
             s3.Bucket(app.config['S3_BUCKET']).put_object(
                 Key=key_str,
@@ -190,14 +201,14 @@ def files():
             db.session.add(new_file)
             db.session.commit()
 
-            return jsonify({'msg': 'Uploaded {0}'.format(filename)})        
+            return jsonify({'msg': 'Uploaded {0}'.format(filename)})
 
-        return jsonify({'msg': 'Something went wrong'}), 400        
+        return jsonify({'msg': 'Something went wrong'}), 400
 
     user_files = [{'name': file.name, 'body': file.body, "id": file.id}
                   for file in current_user.files]
     user_files.reverse()
-    
+
     return jsonify({'files': user_files})
 
 
@@ -227,10 +238,11 @@ def file(file_id):
         'url': url,
         'body': file.body,
         'date': file.date,
-        'size': res_object['ResponseMetadata']['HTTPHeaders']['content-length'],        
+        'size': res_object['ResponseMetadata']['HTTPHeaders']['content-length'],
     }
-    
-    return jsonify({'file' : file_dict})
+
+    return jsonify({'file': file_dict})
+
 
 @app.route('/files/<file_id>/edit', methods=['PATCH'])
 @login_required
@@ -238,7 +250,7 @@ def edit_file(file_id):
     file = File.query.filter_by(id=file_id).first()
     if not file:
         return jsonify({'msg': 'File does not exist'})
-    
+
     if request.method == 'PATCH':
         print(request.form)
         try:
@@ -248,14 +260,13 @@ def edit_file(file_id):
 
         if len(file_text) > 130:
             return jsonify({'msg': 'File description must be less than 140 characters'}), 400
-        
+
         file.body = file_text
         db.session.commit()
         return jsonify({'msg': 'Filed edited!'})
 
     return jsonify({'err': 'You can not do that'})
-        
-    
+
 
 @app.route('/files/<file_id>/delete', methods=['DELETE'])
 @login_required
