@@ -34,27 +34,29 @@ def index():
         .format(current_user.username)
     })
 
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    '''
-    Expects two form values:
-    - username
-    - password
-    '''
+@app.route('/verify')
+def verify():
     token = request.args.get('token')
-
     if token:
         user_id = User.verify_email_token(token)
         if not user_id:
             flash('That token is invalid. It may have expired. Please request a new one.')
-            return redirect(url_for('index'))
+            return redirect(url_for('index'))        
         user = User.query.get(user_id)
         user.is_verified = True
         db.session.commit()
         login_user(user)
         return redirect(url_for('index'))
+    return redirect(url_for('index'))
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    '''
+    GET 
+    POST Expects two form values:
+    - username
+    - password
+    '''
     if request.method == 'POST':
         try:
             username = request.form['username']
@@ -98,7 +100,7 @@ def register():
     - password2
     '''
     if request.method == 'POST':
-        print(request.form)
+
         try:
             username = request.form['username']
             user_email = request.form['email']
@@ -113,12 +115,10 @@ def register():
         if user_exists:
             return jsonify({'err': 'Username or email already exists'}), 400
 
-        if (len(username) < 8) or (len(username) > 20):
+        if (len(username) <= 8) or (len(username) >= 20):
             return jsonify(
                 {'err': 'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)}), 400
 
-        # TODO decide which order is better, validate len or match.
-        #     This order provides better UX, IMO
         password_len = max(len(password1), len(password2))
         if (password_len < 8) or (password_len > 20):
             return jsonify({'err': 'Password  must be between {0} and {1} characters'.format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)}), 400
@@ -178,8 +178,11 @@ def files():
         if file.filename == '':
             return jsonify({'msg': 'missing file name'}), 400
 
+        # Must secure filename before checking if it already exists
+        filename = secure_filename(file.filename)
         file_names = [file.name for file in current_user.files]
-        if file.filename in file_names:
+        
+        if filename in file_names:
             return jsonify({'msg': 'You already have a file with that name. File names must be unique'}), 400
 
         if len(file_text) > 130:
@@ -188,8 +191,7 @@ def files():
         if not allowed_file(file.filename):
             return jsonify({'msg': 'Invalid file type'}), 400
 
-        if file:
-            filename = secure_filename(file.filename)
+        if file:            
             key_str = "{0}/{1}".format(current_user.username, filename)
             s3.Bucket(app.config['S3_BUCKET']).put_object(
                 Key=key_str,
@@ -252,7 +254,6 @@ def edit_file(file_id):
         return jsonify({'msg': 'File does not exist'})
 
     if request.method == 'PATCH':
-        print(request.form)
         try:
             file_text = request.form['body']
         except:
