@@ -10,9 +10,6 @@ from app import app, db
 from app.models import User, File
 from app.email import auth_email, reset_email
 
-s3 = boto3.resource('s3')
-s3_client = boto3.client('s3')
-
 MIN_USERNAME_LEN = 6
 MAX_USERNAME_LEN = 20
 MIN_PASSWORD_LEN = 12
@@ -20,12 +17,19 @@ MAX_PASSWORD_LEN = 30
 
 ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
 
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+s3 = boto3.resource('s3')
+s3_client = boto3.client('s3')
 
+
+"""
+===============
+    ROUTES
+===============
+"""
 @app.route('/')
 @login_required
 def index():
@@ -34,6 +38,12 @@ def index():
         .format(current_user.username)
     })
 
+
+"""
+------------
+    AUTH
+------------
+"""
 @app.route('/verify')
 def verify():
     token = request.args.get('token')
@@ -48,6 +58,7 @@ def verify():
         login_user(user)
         return redirect(url_for('index'))
     return redirect(url_for('index'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -91,16 +102,8 @@ def logout():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-def register():
-    '''
-    Expects three form values:
-    - username
-    - email
-    - password1
-    - password2
-    '''
+def register():    
     if request.method == 'POST':
-
         try:
             username = request.form['username']
             user_email = request.form['email']
@@ -142,7 +145,7 @@ def register():
     return jsonify({'msg': 'User added'})
 
 
-@app.route('/user', methods=['DELETE'])
+@app.route('/user/delete', methods=['DELETE'])
 @login_required
 def delete_user():
     db.session.delete(current_user)
@@ -154,10 +157,10 @@ def delete_user():
  
 
 """
-S3 LOGIC
+------------
+    S3
+------------
 """
-
-
 @app.route('/files', methods=['GET', 'POST'])
 @login_required
 def files():
