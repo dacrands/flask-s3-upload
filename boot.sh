@@ -1,7 +1,7 @@
 #!/bin/sh
 # This boots up the docker container
 
-source venv/bin/activate
+source s3_upload_env/bin/activate
 while true; do
     flask db upgrade
     if [[ "$?" == "0" ]]; then
