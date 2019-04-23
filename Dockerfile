@@ -7,9 +7,9 @@ WORKDIR /home/justfiles
 RUN apk add --no-cache curl python3 pkgconfig python3-dev openssl-dev libffi-dev musl-dev make gcc
 
 COPY requirements.txt requirements.txt
-RUN python -m venv venv
-RUN venv/bin/pip install -r requirements.txt
-RUN venv/bin/pip install gunicorn pymysql
+RUN python -m venv s3_upload_env
+RUN s3_upload_env/bin/pip install -r requirements.txt
+RUN s3_upload_env/bin/pip install gunicorn pymysql
 
 COPY app app
 COPY migrations migrations

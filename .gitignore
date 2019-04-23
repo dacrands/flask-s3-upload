@@ -1,4 +1,5 @@
 keys.txt
 __pycache__
 s3_file_env
+venv
 app.db
