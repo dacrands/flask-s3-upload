@@ -1,9 +1,10 @@
 import re
 import os
+from functools import wraps
 import boto3
 from botocore.exceptions import ClientError
 from flask import render_template, flash, redirect, url_for, request, jsonify, render_template
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_login import login_user, logout_user, current_user
 from werkzeug.utils import secure_filename
 
 from app import app, db
@@ -24,6 +25,16 @@ def allowed_file(filename):
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            if not app.debug:
+                return redirect(url_for('login', next=request.url, _scheme='https', _external='true'))                
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 """
 ===============
@@ -35,7 +46,7 @@ s3_client = boto3.client('s3')
 def index():
     return jsonify({
         'msg': 'This is a restricted page! {}'
-        .format(current_user.username)
+        .format(current_user)
     })
 
 
