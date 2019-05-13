@@ -1,7 +1,7 @@
 import re
 import os
-from functools import wraps
 import boto3
+from functools import wraps
 from botocore.exceptions import ClientError
 from flask import render_template, flash, redirect, url_for, request, jsonify, render_template
 from flask_login import login_user, logout_user, current_user
@@ -11,21 +11,27 @@ from app import app, db
 from app.models import User, File
 from app.email import auth_email, reset_email
 
+
+# CONSTANTS
 MIN_USERNAME_LEN = 6
 MAX_USERNAME_LEN = 20
 MIN_PASSWORD_LEN = 12
 MAX_PASSWORD_LEN = 30
-
 ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
 
+
+# Helper Functions
 def allowed_file(filename):
+    """
+    Makes sure the file has a permitted extension
+    """
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-s3 = boto3.resource('s3')
-s3_client = boto3.client('s3')
-
 def login_required(f):
+    """
+    temp auth middleware until resolve https redirect with `login_required` from flask-login
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
@@ -35,12 +41,17 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# S3 Instances
+s3 = boto3.resource('s3')
+s3_client = boto3.client('s3')
 
-"""
-===============
-    ROUTES
-===============
-"""
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#          ROUTES
+#
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 @app.route('/')
 @login_required
 def index():
@@ -49,14 +60,18 @@ def index():
         .format(current_user)
     })
 
-
-"""
-------------
-    AUTH
-------------
-"""
+#
+# AUTH VIEWS
+# --------------------------------------------------------- 
+# Views for user `registration`, `verification`, `login`, `logout`,
+# `deleting account`
+# --------------------------------------------------------- 
+#
 @app.route('/verify')
 def verify():
+    """
+    Verifies user token, redirects if token is invalid
+    """
     token = request.args.get('token')
     if token:
         user_id = User.verify_email_token(token)
@@ -73,24 +88,29 @@ def verify():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    '''
-    GET 
-    POST Expects two form values:
-    - username
-    - password
-    '''
+    """
+    Logs in user with valid credentials.
+
+    If the user is not verified, 
+    the user will be sent another email with a new token.
+    """
     if request.method == 'POST':
+        # Make sure 
         try:
             username = request.form['username']
             password = request.form['password']
         except:
             return jsonify({'err': 'Missing form information'}), 400
 
+        # Find the user
         user = User.query.filter_by(username=username).first()
 
+        # If the user doesn't exist, or invalid password,
+        # send back 401, invalid params
         if (not user) or (not user.check_password(password)):
             return jsonify({'err': 'Invalid username or password'}), 401
 
+        # If the user is not verified, send a new email
         if not user.is_verified:
             token = user.get_email_token()
             auth_email('welcome@justfiles.com',
@@ -114,6 +134,10 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():    
+    """
+    Registers a new user if the current username
+    does not exist and sends verification email.
+    """
     if request.method == 'POST':
         try:
             username = request.form['username']
@@ -159,6 +183,9 @@ def register():
 @app.route('/user/delete', methods=['DELETE'])
 @login_required
 def delete_user():
+    """
+    Deletes a user and the user's S3 buckets
+    """
     db.session.delete(current_user)
     db.session.commit()
 
@@ -166,20 +193,19 @@ def delete_user():
         Bucket=app.config['S3_BUCKET'], Key=current_user.username + '/')
     return jsonify({'msg': 'User deleted'})
  
-
-"""
-------------
-    S3
-------------
-"""
+#
+# S3 VIEWS
+# --------------------------------------------------------- 
+# Views for GET, POST, DELETE, PATCH file(s)
+# --------------------------------------------------------- 
 @app.route('/files', methods=['GET', 'POST'])
 @login_required
 def files():
-    '''
-    Expects three form values:
-    - File Info
-    - File  
-    '''
+    """
+    Uploads a new file if the filename does not exist
+    in the current users filenames.
+
+    """
     if request.method == 'POST':
 
         try:
@@ -211,7 +237,7 @@ def files():
                 Key=key_str,
                 Body=request.files['file'].stream.read()
             )
-            # ADD A NEW FILE
+            # Add a new file
             new_file = File(name=filename, body=file_text, date=file_date,
                             key=key_str, author=current_user)
             db.session.add(new_file)
