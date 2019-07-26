@@ -4,7 +4,7 @@ Amazon S3 API with user-authentication and SendGrid email-support built with Fla
 
 ## Getting Started
 
-To run this application you will Python 3 installed and accounts for two third-party services:
+To run this application you will need Python 3 installed on your machine and accounts for two third-party services:
 - [Amazon S3](https://aws.amazon.com/s3/)
 - [SendGrid](https://sendgrid.com/)
 
@@ -49,7 +49,7 @@ Now that our environment is activated, let's install our app's dependencies.
 
 ### Install your requirements
 
-With your environment activate, run the following command in your app's route directory (viz., the directory that contains the *requirements.txt * file).
+With your environment active, run the following command in your app's route directory (viz., the directory that contains the *requirements.txt* file).
 
 ```
 pip install -r requirements.txt 
@@ -57,9 +57,9 @@ pip install -r requirements.txt
 
 ### Config
 
-For development you can leave the *SECRET_KEY* and *SQLALCHEMY_DATABASE_URI* as their defaults. In production, however, those would need be configured
+For development you can leave the *SECRET_KEY* and *SQLALCHEMY_DATABASE_URI* configuration values as their defaults. In production, however, those will need be set to their respective values.
 
-Run the following commands to configure your S3 Bucket and SendGrid API key. Windows users will use `set` instead `export` here:
+Run the following commands to configure your S3 Bucket and SendGrid API key. Windows users will use `set` instead `export`:
 
 ```
 export S3_BUCKET=<your_bucket>
@@ -83,4 +83,14 @@ export FLASK_DEBUG=1
 ```
 
 
+Then run the application:
+
+```
+flask run
+```
+
+If all goes well, you should be able to visit the API at *localhost:5000*.
+
+## Author
+David Crandall
 
