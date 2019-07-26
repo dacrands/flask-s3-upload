@@ -207,7 +207,7 @@ def files():
 
     """
     if request.method == 'POST':
-
+        print(request.form)
         try:
             file_text = request.form['text']
             file = request.files['file']
