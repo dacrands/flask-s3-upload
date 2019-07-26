@@ -57,7 +57,7 @@ pip install -r requirements.txt
 
 ### Config
 
-For development you can leave the *SECRET_KEY* and *SQLALCHEMY_DATABASE_URI* configuration values as their defaults. In production, however, those will need be set to their respective values.
+For development you can leave the *SECRET_KEY* and *SQLALCHEMY_DATABASE_URI* variables as their defaults. In production, however, those will need be set to their respective values.
 
 Run the following commands to configure your S3 Bucket and SendGrid API key. Windows users will use `set` instead `export`:
 
@@ -66,7 +66,7 @@ export S3_BUCKET=<your_bucket>
 export SENDGRID_API_KEYT=<your_api_key>
 ``` 
 
-Given our app is properly figured, it is time for the moment of truth &mdash; let's run it and see if it works. 
+Given our app is properly figured, it is time to run the application.
 
 ### Run the app
 
@@ -76,7 +76,7 @@ Before we can run the app, we need to tell flask the name of the file it will us
 export FLASK_APP=run.py
 ```
 
-To run your app in debug mode, set *FLASK_DEBUG* to 1. For a proudction build, set *FLASK_DEBUG* to 0, which is the default value.
+To run your app in debug mode, set *FLASK_DEBUG* to 1. For a production build, set *FLASK_DEBUG* to 0, which is the default value.
 
 ```
 export FLASK_DEBUG=1
