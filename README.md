@@ -49,7 +49,7 @@ Now that our environment is activated, let's install our app's dependencies.
 
 ### Install your requirements
 
-With your environment active, run the following command in your app's route directory (viz., the directory that contains the *requirements.txt* file).
+With your environment active, run the following command in your app's root directory (viz., the directory that contains the *requirements.txt* file).
 
 ```
 pip install -r requirements.txt 
