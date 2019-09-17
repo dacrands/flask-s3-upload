@@ -206,8 +206,7 @@ def files():
     in the current users filenames.
 
     """
-    if request.method == 'POST':
-        print(request.form)
+    if request.method == 'POST':        
         try:
             file_text = request.form['text']
             file = request.files['file']
