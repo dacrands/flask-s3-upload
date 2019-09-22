@@ -108,7 +108,7 @@ def login():
         # If the user doesn't exist, or invalid password,
         # send back 401, invalid params
         if (not user) or (not user.check_password(password)):
-            return jsonify({'err': 'Invalid username or password'}), 401
+            return jsonify({'err': 'Invalid username or password'}), 400
 
         # If the user is not verified, send a new email
         if not user.is_verified:
@@ -122,7 +122,7 @@ def login():
         login_user(user)
         return jsonify({'username': current_user.username, 'msg': 'Logged in'})
 
-    return jsonify({'err': 'Please log in'}), 403
+    return jsonify({'err': 'Please log in'}), 401
 
 
 @app.route('/logout')
