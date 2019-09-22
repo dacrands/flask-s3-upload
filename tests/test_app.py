@@ -21,6 +21,7 @@ def client():
   os.close(db_fd)
   os.unlink(app.config['DATABASE'])
 
+
 def test_send_email():
   """Test email"""
   auth_email_resp = auth_email('welcome@justfiles.com',
@@ -37,9 +38,18 @@ def test_send_email():
   assert reset_email_resp == 202
 
 
+def test_s3_bucket():
+  """Test configured bucket exists"""
+  s3 = boto3.resource('s3')
+  buckets = [ bucket.name for bucket in s3.buckets.all() ]
+
+  assert app.config['S3_BUCKET'] in buckets
+  
+
+
 def test_user_password():
   """
-  Test new user
+  Test new user password hash
   """
   user = User(email="someone@gmail.com", username='This is cool')
   user.set_password("password")
