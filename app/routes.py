@@ -147,7 +147,6 @@ def register():
         except:
             return jsonify({'err': 'Missing part of your form'}), 400
 
-        # TODO email validation
         user_exists = User.query.filter_by(username=username).first(
         ) or User.query.filter_by(email=user_email).first()
         if user_exists:
