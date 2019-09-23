@@ -33,13 +33,13 @@ def login_required(f):
     temp auth middleware until resolve https redirect with `login_required` from flask-login
     """
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def https_redirect(*args, **kwargs):
         if not current_user.is_authenticated:
             if not app.debug:
                 return redirect(url_for('login', next=request.url, _scheme='https', _external='true'))                
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
-    return decorated_function
+    return https_redirect
 
 # S3 Instances
 s3 = boto3.resource('s3')
