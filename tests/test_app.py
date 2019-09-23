@@ -49,6 +49,14 @@ def test_s3_bucket():
     assert app.config['S3_BUCKET'] in buckets
 
 
+def test_unauthorized_redirect(client):
+    """Test unauthorized redirect"""
+
+    rv = client.get('/')
+
+    assert rv.status_code == 302
+
+
 def test_unauthorized_request(client):
     """Test unauthorized request"""
 
