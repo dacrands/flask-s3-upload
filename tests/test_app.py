@@ -25,6 +25,7 @@ def client():
 
 def test_send_email():
     """Test email"""
+
     auth_email_resp = auth_email('welcome@justfiles.com',
                                  'Verify Your Account!',
                                  'test@email.com',
@@ -41,17 +42,26 @@ def test_send_email():
 
 def test_s3_bucket():
     """Test configured bucket exists"""
+
     s3 = boto3.resource('s3')
     buckets = [bucket.name for bucket in s3.buckets.all()]
 
     assert app.config['S3_BUCKET'] in buckets
 
 
+def test_unauthorized_request(client):
+    """Test unauthorized request"""
+
+    rv = client.get('/', follow_redirects=True)
+
+    assert rv.status_code == 401
+
+
 def test_user_password():
-    """
-    Test new user password hash
-    """
+    """Test new user password hash"""
+
     user = User(email='someone@gmail.com', username='This is cool')
     user.set_password('password')
+
     assert user.check_password('password')
     assert user.password_hash != 'password'
