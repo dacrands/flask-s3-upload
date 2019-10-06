@@ -28,6 +28,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 def login_required(f):
     """
     temp auth middleware until resolve https redirect with `login_required` from flask-login
@@ -36,15 +37,15 @@ def login_required(f):
     def https_redirect(*args, **kwargs):
         if not current_user.is_authenticated:
             if not app.debug:
-                return redirect(url_for('login', next=request.url, _scheme='https', _external='true'))                
+                return redirect(url_for('login', next=request.url, _scheme='https', _external='true'))
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return https_redirect
 
+
 # S3 Instances
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
-
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,11 +63,13 @@ def index():
 
 #
 # AUTH VIEWS
-# --------------------------------------------------------- 
+# ---------------------------------------------------------
 # Views for user `registration`, `verification`, `login`, `logout`,
 # `deleting account`
-# --------------------------------------------------------- 
+# ---------------------------------------------------------
 #
+
+
 @app.route('/verify')
 def verify():
     """
@@ -77,7 +80,7 @@ def verify():
         user_id = User.verify_email_token(token)
         if not user_id:
             flash('That token is invalid. It may have expired. Please request a new one.')
-            return redirect(url_for('index'))        
+            return redirect(url_for('index'))
         user = User.query.get(user_id)
         user.is_verified = True
         db.session.commit()
@@ -95,7 +98,7 @@ def login():
     the user will be sent another email with a new token.
     """
     if request.method == 'POST':
-        # Make sure 
+        # Make sure
         try:
             username = request.form['username']
             password = request.form['password']
@@ -114,9 +117,9 @@ def login():
         if not user.is_verified:
             token = user.get_email_token()
             auth_email('welcome@justfiles.com',
-                   'Verify Your Account!',
-                   user.email,
-                   render_template('email/verify.html', token=token))
+                       'Verify Your Account!',
+                       user.email,
+                       render_template('email/verify.html', token=token))
             return jsonify({'err': 'Please verify your account. We just sent another email'}), 401
 
         login_user(user)
@@ -133,7 +136,7 @@ def logout():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-def register():    
+def register():
     """
     Registers a new user if the current username
     does not exist and sends verification email.
@@ -191,12 +194,14 @@ def delete_user():
     s3_client.delete_object(
         Bucket=app.config['S3_BUCKET'], Key=current_user.username + '/')
     return jsonify({'msg': 'User deleted'})
- 
+
 #
 # S3 VIEWS
-# --------------------------------------------------------- 
+# ---------------------------------------------------------
 # Views for GET, POST, DELETE, PATCH file(s)
-# --------------------------------------------------------- 
+# ---------------------------------------------------------
+
+
 @app.route('/files', methods=['GET', 'POST'])
 @login_required
 def files():
@@ -205,7 +210,7 @@ def files():
     in the current users filenames.
 
     """
-    if request.method == 'POST':        
+    if request.method == 'POST':
         try:
             file_text = request.form['text']
             file = request.files['file']
@@ -219,7 +224,7 @@ def files():
         # Must secure filename before checking if it already exists
         filename = secure_filename(file.filename)
         file_names = [file.name for file in current_user.files]
-        
+
         if filename in file_names:
             return jsonify({'msg': 'You already have a file with that name. File names must be unique'}), 400
 
@@ -229,7 +234,7 @@ def files():
         if not allowed_file(file.filename):
             return jsonify({'msg': 'Invalid file type'}), 400
 
-        if file:            
+        if file:
             key_str = "{0}/{1}".format(current_user.username, filename)
             s3.Bucket(app.config['S3_BUCKET']).put_object(
                 Key=key_str,
