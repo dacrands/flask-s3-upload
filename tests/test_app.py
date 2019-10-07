@@ -14,15 +14,43 @@ def client():
     app.config['SQLALCHEMY_DATABASE_URI'] =  \
         'sqlite:///' + os.path.join(basedir, 'test_app.db')
 
-    db.create_all()
-
     with app.test_client() as client:
         with app.app_context():
             db.create_all()
 
             yield client
 
-            db.drop_all()
+    db.drop_all()
+
+
+def test_login_user(client):
+    """Test login user"""
+
+    username = "test"
+    email = "test@email.com"
+    password = "test123"
+
+    user = User(
+        username=username,
+        email=email
+    )
+
+    user.set_password(password)
+    user.is_verified = True
+    db.session.add(user)
+
+    valid_login = client.post('/login', data=dict(
+        username=username,
+        password=password
+    ), follow_redirects=True)
+
+    invalid_login = client.post('/login', data=dict(
+        username="baduser",
+        password="badpass"
+    ), follow_redirects=True)
+
+    assert valid_login.status_code == 200
+    assert invalid_login.status_code == 400
 
 
 def test_unauthorized_redirect(client):
