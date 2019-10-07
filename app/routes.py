@@ -1,47 +1,23 @@
 import re
 import os
 import boto3
-from functools import wraps
 from botocore.exceptions import ClientError
-from flask import render_template, flash, redirect, url_for, request, jsonify, render_template
+from flask import render_template, flash, redirect, url_for, request, jsonify
 from flask_login import login_user, logout_user, current_user
 from werkzeug.utils import secure_filename
 
 from app import app, db
 from app.models import User, File
 from app.email import auth_email, reset_email
+from app.utils import login_required, allowed_file
 
 
-# CONSTANTS
+# Form Validator Constants
 MIN_USERNAME_LEN = 6
 MAX_USERNAME_LEN = 20
 MIN_PASSWORD_LEN = 12
 MAX_PASSWORD_LEN = 30
 ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
-
-
-# Helper Functions
-def allowed_file(filename):
-    """
-    Makes sure the file has a permitted extension
-    """
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def login_required(f):
-    """
-    temp auth middleware until resolve https redirect with `login_required` from flask-login
-    """
-    @wraps(f)
-    def https_redirect(*args, **kwargs):
-        if not current_user.is_authenticated:
-            if not app.debug:
-                return redirect(url_for('login', next=request.url, _scheme='https', _external='true'))
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-    return https_redirect
-
 
 # S3 Instances
 s3 = boto3.resource('s3')
@@ -94,11 +70,11 @@ def login():
     """
     Logs in user with valid credentials.
 
-    If the user is not verified, 
+    If the user is not verified,
     the user will be sent another email with a new token.
     """
     if request.method == 'POST':
-        # Make sure
+        # Check for missing form info
         try:
             username = request.form['username']
             password = request.form['password']
@@ -120,7 +96,7 @@ def login():
                        'Verify Your Account!',
                        user.email,
                        render_template('email/verify.html', token=token))
-            return jsonify({'err': 'Please verify your account. We just sent another email'}), 401
+            return jsonify({'err': 'Please verify your account. \ We just sent another email'}), 401
 
         login_user(user)
         return jsonify({'username': current_user.username, 'msg': 'Logged in'})
