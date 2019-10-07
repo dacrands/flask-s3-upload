@@ -3,6 +3,8 @@ from app import app
 from flask import redirect, url_for, request
 from flask_login import current_user
 
+ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
+
 
 def allowed_file(filename):
     """

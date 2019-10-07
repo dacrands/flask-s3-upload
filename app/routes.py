@@ -17,7 +17,6 @@ MIN_USERNAME_LEN = 6
 MAX_USERNAME_LEN = 20
 MIN_PASSWORD_LEN = 12
 MAX_PASSWORD_LEN = 30
-ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
 
 # S3 Instances
 s3 = boto3.resource('s3')
