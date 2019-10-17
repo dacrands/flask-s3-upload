@@ -36,13 +36,14 @@ def index():
         .format(current_user)
     })
 
-#
+
+# ---------------------------------------------------------
 # AUTH VIEWS
-# ---------------------------------------------------------
-# Views for user `registration`, `verification`, `login`, `logout`,
-# `deleting account`
-# ---------------------------------------------------------
 #
+# Views for user `registration`, `verification`,
+# `login`, `logout`, `deleting account`
+# ---------------------------------------------------------
+
 
 
 @app.route('/verify')
@@ -77,14 +78,13 @@ def login():
         try:
             username = request.form['username']
             password = request.form['password']
-        except:
+        except KeyError:
             return jsonify({'err': 'Missing form information'}), 400
 
         # Find the user
         user = User.query.filter_by(username=username).first()
 
-        # If the user doesn't exist, or invalid password,
-        # send back 401, invalid params
+        # Check if user exists or provided invalid PW
         if (not user) or (not user.check_password(password)):
             return jsonify({'err': 'Invalid username or password'}), 400
 
@@ -106,6 +106,9 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    """
+    Log the user out
+    """
     logout_user()
     return jsonify({'msg': 'Logged out'})
 
@@ -122,7 +125,7 @@ def register():
             user_email = request.form['email']
             password1 = request.form['password1']
             password2 = request.form['password2']
-        except:
+        except KeyError:
             return jsonify({'err': 'Missing part of your form'}), 400
 
         user_exists = User.query.filter_by(username=username).first(
@@ -190,7 +193,7 @@ def files():
             file_text = request.form['text']
             file = request.files['file']
             file_date = request.form['date']
-        except:
+        except KeyError:
             return jsonify({'msg': 'Missing part of your form'}), 400
 
         if file.filename == '':
@@ -274,7 +277,7 @@ def edit_file(file_id):
     if request.method == 'PATCH':
         try:
             file_text = request.form['body']
-        except:
+        except KeyError:
             return jsonify({'err': 'Missing part of your form'}), 400
 
         if len(file_text) > 130:
