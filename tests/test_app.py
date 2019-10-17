@@ -49,8 +49,13 @@ def test_login_user(client):
         password="badpass"
     ), follow_redirects=True)
 
+    invalid_form = client.post('/login', data=dict(
+        username=username
+    ), follow_redirects=True)
+
     assert valid_login.status_code == 200
     assert invalid_login.status_code == 400
+    assert invalid_form.status_code == 400
 
 
 def test_unauthorized_redirect(client):
