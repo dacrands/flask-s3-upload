@@ -43,9 +43,6 @@ def index():
 # Views for user `registration`, `verification`,
 # `login`, `logout`, `deleting account`
 # ---------------------------------------------------------
-
-
-
 @app.route('/verify')
 def verify():
     """
@@ -55,7 +52,8 @@ def verify():
     if token:
         user_id = User.verify_email_token(token)
         if not user_id:
-            flash('That token is invalid. It may have expired. Please request a new one.')
+            flash('That token is invalid. It may have expired. \
+            Please request a new one.')
             return redirect(url_for('index'))
         user = User.query.get(user_id)
         user.is_verified = True
@@ -95,7 +93,9 @@ def login():
                        'Verify Your Account!',
                        user.email,
                        render_template('email/verify.html', token=token))
-            return jsonify({'err': 'Please verify your account. \ We just sent another email'}), 401
+            return jsonify({
+                'err': 'Please verify your account. We just sent another email'
+            }), 401
 
         login_user(user)
         return jsonify({'username': current_user.username, 'msg': 'Logged in'})
@@ -134,12 +134,18 @@ def register():
             return jsonify({'err': 'Username or email already exists'}), 400
 
         if (len(username) <= 8) or (len(username) >= 20):
-            return jsonify(
-                {'err': 'Username must be between {0} and {1} characters'.format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)}), 400
+            return jsonify({
+                'err': 'Username must be between {0} and {1} characters'
+                .format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)
+            }), 400
 
         password_len = max(len(password1), len(password2))
+        # TODO replace with constants
         if (password_len < 8) or (password_len > 20):
-            return jsonify({'err': 'Password  must be between {0} and {1} characters'.format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)}), 400
+            return jsonify({
+                'err': 'Password  must be between {0} and {1} characters'
+                .format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)
+            }), 400
 
         if password1 != password2:
             return jsonify({'err': 'Passwords do not match'}), 400
@@ -204,10 +210,15 @@ def files():
         file_names = [file.name for file in current_user.files]
 
         if filename in file_names:
-            return jsonify({'msg': 'You already have a file with that name. File names must be unique'}), 400
+            return jsonify({
+                'msg': 'You already have a file with that name. \
+                        File names must be unique'
+            }), 400
 
         if len(file_text) > 130:
-            return jsonify({'msg': 'File description must be less than 130 characters'}), 400
+            return jsonify({
+                'msg': 'File description must be less than 130 characters'
+            }), 400
 
         if not allowed_file(file.filename):
             return jsonify({'msg': 'Invalid file type'}), 400
@@ -281,7 +292,9 @@ def edit_file(file_id):
             return jsonify({'err': 'Missing part of your form'}), 400
 
         if len(file_text) > 130:
-            return jsonify({'msg': 'File description must be less than 140 characters'}), 400
+            return jsonify({
+                'msg': 'File description must be less than 140 characters'
+            }), 400
 
         file.body = file_text
         db.session.commit()
