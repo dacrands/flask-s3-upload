@@ -133,16 +133,16 @@ def register():
         if user_exists:
             return jsonify({'err': 'Username or email already exists'}), 400
 
-        if (len(username) <= MIN_USERNAME_LEN) or
-        (len(username) >= MAX_USERNAME_LEN):
+        if (len(username) <= MIN_USERNAME_LEN) or \
+                (len(username) >= MAX_USERNAME_LEN):
             return jsonify({
                 'err': 'Username must be between {0} and {1} characters'
                 .format(MIN_USERNAME_LEN, MAX_USERNAME_LEN)
             }), 400
 
         password_len = max(len(password1), len(password2))
-        if (password_len < MIN_PASSWORD_LEN) or
-        (password_len > MAX_PASSWORD_LEN):
+        if (password_len < MIN_PASSWORD_LEN) or \
+                (password_len > MAX_PASSWORD_LEN):
             return jsonify({
                 'err': 'Password  must be between {0} and {1} characters'
                 .format(MIN_PASSWORD_LEN, MAX_PASSWORD_LEN)
