@@ -9,4 +9,4 @@ class Config(object):
         'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     S3_BUCKET = os.environ.get('S3_BUCKET') or 'NOT_SET'
-    SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY') or 'whoops'    
+    SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY') or 'whoops'

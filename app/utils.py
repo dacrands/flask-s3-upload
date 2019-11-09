@@ -23,7 +23,12 @@ def login_required(f):
     def https_redirect(*args, **kwargs):
         if not current_user.is_authenticated:
             if not app.debug:
-                return redirect(url_for('login', next=request.url, _scheme='https', _external='true'))
+                return redirect(
+                    url_for(
+                        'login',
+                        next=request.url,
+                        _scheme='https',
+                        _external='true'))
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return https_redirect
