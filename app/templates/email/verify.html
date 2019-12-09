@@ -9,13 +9,13 @@ padding: 5px; ">
 <p>Hello,</p>
 
 <p>Please verify your email!</p>
-<!-- <a href="{{ url_for('login', token=token, _external=True) }}"> -->
+<!-- <a href="{{ url_for('auth.login', token=token, _external=True) }}"> -->
 <a href="https://files.crandall.dev/verify?token={{token}}">
 Verify
 </a>.
 
 <p>Alternatively, you can paste the following link in your browser's address bar:</p>
-<!-- {{ url_for('login', token=token, _external=True) }} -->
+<!-- {{ url_for('auth.login', token=token, _external=True) }} -->
 https://files.crandall.dev/verify?token={{token}}
 <p>If you have not requested a password reset simply ignore this message.</p>
 <p>Sincerely,</p>

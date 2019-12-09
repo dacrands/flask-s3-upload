@@ -1,6 +1,5 @@
 from functools import wraps
-from app import app
-from flask import redirect, url_for, request
+from flask import redirect, url_for, request, current_app
 from flask_login import current_user
 
 ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'xlsx'])
@@ -22,13 +21,13 @@ def login_required(f):
     @wraps(f)
     def https_redirect(*args, **kwargs):
         if not current_user.is_authenticated:
-            if not app.debug:
+            if not current_app.debug:
                 return redirect(
                     url_for(
-                        'login',
+                        'auth.login',
                         next=request.url,
                         _scheme='https',
                         _external='true'))
-            return redirect(url_for('login', next=request.url))
+            return redirect(url_for('auth.login', next=request.url))
         return f(*args, **kwargs)
     return https_redirect
