@@ -1,7 +1,11 @@
 .vscode
 
 __pycache__
+
 s3_file_env
 venv
+
+logs
+
 app.db
 test_app.db
