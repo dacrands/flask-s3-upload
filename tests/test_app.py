@@ -2,7 +2,7 @@ import os
 import tempfile
 import pytest
 
-from app import app, db
+from app import create_app, db
 from app.models import User
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -10,17 +10,19 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 @pytest.fixture
 def client():
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] =  \
-        'sqlite:///' + os.path.join(basedir, 'test_app.db')
-
+    app = create_app({
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': tempfile.mkstemp()
+    })
     with app.test_client() as client:
-        with app.app_context():
+        with app.app_context() as app_context:
+            app_context.push()
             db.create_all()
-
             yield client
 
+    db.session.remove()
     db.drop_all()
+    app_context.pop()
 
 
 def test_login_user(client):
