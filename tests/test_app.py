@@ -7,22 +7,27 @@ from app.models import User
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+TEST_DB_PATH = 'sqlite:///' + os.path.join(basedir, 'test_app.db')
+
 
 @pytest.fixture
 def client():
-    app = create_app({
-        'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': tempfile.mkstemp()
-    })
+    app = create_app()
+    app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI=TEST_DB_PATH
+    )
+
     with app.test_client() as client:
         with app.app_context() as app_context:
-            app_context.push()
             db.create_all()
+            app_context.push()
+
             yield client
 
-    db.session.remove()
-    db.drop_all()
-    app_context.pop()
+            db.session.remove()
+            db.drop_all()
+            app_context.pop()
 
 
 def test_login_user(client):
@@ -31,7 +36,6 @@ def test_login_user(client):
     username = "test"
     email = "test@email.com"
     password = "test123"
-
     user = User(
         username=username,
         email=email
