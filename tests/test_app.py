@@ -67,17 +67,21 @@ def test_login_user(client):
 def test_unauthorized_redirect(client):
     """Test unauthorized redirect"""
 
-    rv = client.get('/')
+    get_index = client.get('/')
+    get_files = client.get('/files')
 
-    assert rv.status_code == 302
+    assert get_index.status_code == 302
+    assert get_files.status_code == 302
 
 
 def test_unauthorized_request(client):
     """Test unauthorized request"""
 
-    rv = client.get('/', follow_redirects=True)
+    get_index = client.get('/', follow_redirects=True)
+    get_files = client.get('/files', follow_redirects=True)
 
-    assert rv.status_code == 401
+    assert get_index.status_code == 401
+    assert get_files.status_code == 401
 
 
 def test_user_password():
