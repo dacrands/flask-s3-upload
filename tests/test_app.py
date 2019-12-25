@@ -10,6 +10,18 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 TEST_DB_PATH = 'sqlite:///' + os.path.join(basedir, 'test_app.db')
 
 
+def add_user_to_db(username, password, is_verified=True):
+    try:
+        user = User(username=username)
+        user.set_password(password)
+        user.is_verified = is_verified
+        db.session.add(user)
+
+    except Exception as err:
+        print("Unexpected error adding User to db:", err)
+        raise
+
+
 @pytest.fixture
 def client():
     app = create_app()
@@ -33,21 +45,14 @@ def client():
 def test_login_user(client):
     """Test login user"""
 
-    username = "test"
-    email = "test@email.com"
-    password = "test123"
-    user = User(
-        username=username,
-        email=email
-    )
+    test_username = "test"
+    test_password = "test123"
 
-    user.set_password(password)
-    user.is_verified = True
-    db.session.add(user)
+    add_user_to_db(test_username, test_password)
 
     valid_login = client.post('/login', data=dict(
-        username=username,
-        password=password
+        username=test_username,
+        password=test_password
     ), follow_redirects=True)
 
     invalid_login = client.post('/login', data=dict(
@@ -56,7 +61,7 @@ def test_login_user(client):
     ), follow_redirects=True)
 
     invalid_form = client.post('/login', data=dict(
-        username=username
+        username=test_username
     ), follow_redirects=True)
 
     assert valid_login.status_code == 200
