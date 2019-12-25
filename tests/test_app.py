@@ -7,7 +7,8 @@ from app.models import User
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-TEST_DB_PATH = 'sqlite:///' + os.path.join(basedir, 'test_app.db')
+TEST_DB_PATH = os.path.join(basedir, 'test_app.db')
+TEST_DB_URI = 'sqlite:///' + TEST_DB_PATH
 
 
 def add_user_to_db(username, password, is_verified=True):
@@ -27,7 +28,7 @@ def client():
     app = create_app()
     app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI=TEST_DB_PATH
+        SQLALCHEMY_DATABASE_URI=TEST_DB_URI
     )
 
     with app.test_client() as client:
@@ -40,7 +41,7 @@ def client():
             db.session.remove()
             db.drop_all()
             app_context.pop()
-            os.remove(os.path.join(basedir, 'test_app.db'))
+            os.remove(TEST_DB_PATH)
 
 
 def test_unauthorized_redirect(client):
