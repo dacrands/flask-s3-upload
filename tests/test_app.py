@@ -76,8 +76,8 @@ def test_authorized_request(client):
         password=test_password
     ), follow_redirects=True)
 
-    get_index = client.get('/', follow_redirects=True)
-    get_files = client.get('/files', follow_redirects=True)
+    get_index = client.get('/')
+    get_files = client.get('/files')
 
     assert get_index.status_code == 200
     assert get_files.status_code == 200
