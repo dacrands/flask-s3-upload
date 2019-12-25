@@ -40,6 +40,7 @@ def client():
             db.session.remove()
             db.drop_all()
             app_context.pop()
+            os.remove(os.path.join(basedir, 'test_app.db'))
 
 
 def test_unauthorized_redirect(client):
