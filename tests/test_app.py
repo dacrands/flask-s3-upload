@@ -42,6 +42,26 @@ def client():
             app_context.pop()
 
 
+def test_unauthorized_redirect(client):
+    """Test unauthorized redirect"""
+
+    get_index = client.get('/')
+    get_files = client.get('/files')
+
+    assert get_index.status_code == 302
+    assert get_files.status_code == 302
+
+
+def test_unauthorized_request(client):
+    """Test unauthorized request"""
+
+    get_index = client.get('/', follow_redirects=True)
+    get_files = client.get('/files', follow_redirects=True)
+
+    assert get_index.status_code == 401
+    assert get_files.status_code == 401
+
+
 def test_login_user(client):
     """Test login user"""
 
@@ -67,26 +87,6 @@ def test_login_user(client):
     assert valid_login.status_code == 200
     assert invalid_login.status_code == 400
     assert invalid_form.status_code == 400
-
-
-def test_unauthorized_redirect(client):
-    """Test unauthorized redirect"""
-
-    get_index = client.get('/')
-    get_files = client.get('/files')
-
-    assert get_index.status_code == 302
-    assert get_files.status_code == 302
-
-
-def test_unauthorized_request(client):
-    """Test unauthorized request"""
-
-    get_index = client.get('/', follow_redirects=True)
-    get_files = client.get('/files', follow_redirects=True)
-
-    assert get_index.status_code == 401
-    assert get_files.status_code == 401
 
 
 def test_user_password():
