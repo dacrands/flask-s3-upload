@@ -62,6 +62,25 @@ def test_unauthorized_request(client):
     assert get_files.status_code == 401
 
 
+def test_authorized_request(client):
+    """Test authorized requests"""
+    test_username = "test"
+    test_password = "test123"
+
+    add_user_to_db(test_username, test_password)
+
+    login = client.post('/login', data=dict(
+        username=test_username,
+        password=test_password
+    ), follow_redirects=True)
+
+    get_index = client.get('/', follow_redirects=True)
+    get_files = client.get('/files', follow_redirects=True)
+
+    assert get_index.status_code == 200
+    assert get_files.status_code == 200
+
+
 def test_login_user(client):
     """Test login user"""
 
