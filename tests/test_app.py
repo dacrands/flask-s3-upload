@@ -110,6 +110,17 @@ def test_login_user(client):
     assert invalid_form.status_code == 400
 
 
+def test_user_token(client):
+    """Test verification of User JWT"""
+    user = User(id=0)
+    token = user.get_email_token()
+    valid_token = user.verify_email_token(token)
+    invalid_token = user.verify_email_token("token")
+
+    assert valid_token == 0
+    assert invalid_token is False
+
+
 def test_user_password():
     """Test new user password hash"""
 
