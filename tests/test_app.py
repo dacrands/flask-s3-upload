@@ -11,15 +11,24 @@ TEST_DB_PATH = os.path.join(basedir, 'test_app.db')
 TEST_DB_URI = 'sqlite:///' + TEST_DB_PATH
 
 
-def add_user_to_db(username, password, is_verified=True):
+def create_user(username, password, is_verified=True):
     try:
         user = User(username=username)
         user.set_password(password)
         user.is_verified = is_verified
+        return user
+
+    except Exception as err:
+        print("Unexpected error creating User: ", err)
+        raise
+
+
+def add_user_to_db(user):
+    try:
         db.session.add(user)
 
     except Exception as err:
-        print("Unexpected error adding User to db:", err)
+        print("Unexpected error adding User to db: ", err)
         raise
 
 
@@ -66,14 +75,14 @@ def test_unauthorized_request(client):
 
 def test_authorized_request(client):
     """Test authorized requests"""
-    test_username = "test"
-    test_password = "test123"
+    username = "test"
+    password = "test123"
 
-    add_user_to_db(test_username, test_password)
+    add_user_to_db(create_user(username, password))
 
     login = client.post('/login', data=dict(
-        username=test_username,
-        password=test_password
+        username=username,
+        password=password
     ), follow_redirects=True)
 
     get_index = client.get('/')
@@ -86,14 +95,14 @@ def test_authorized_request(client):
 def test_login_user(client):
     """Test login user"""
 
-    test_username = "test"
-    test_password = "test123"
+    username = "test"
+    password = "test123"
 
-    add_user_to_db(test_username, test_password)
+    add_user_to_db(create_user(username, password))
 
     valid_login = client.post('/login', data=dict(
-        username=test_username,
-        password=test_password
+        username=username,
+        password=password
     ), follow_redirects=True)
 
     invalid_login = client.post('/login', data=dict(
@@ -102,7 +111,7 @@ def test_login_user(client):
     ), follow_redirects=True)
 
     invalid_form = client.post('/login', data=dict(
-        username=test_username
+        username=username
     ), follow_redirects=True)
 
     assert valid_login.status_code == 200
