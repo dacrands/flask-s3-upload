@@ -3,6 +3,9 @@
 __pycache__
 .pytest_cache
 
+.coverage
+htmlcov
+
 s3_file_env
 venv
 
