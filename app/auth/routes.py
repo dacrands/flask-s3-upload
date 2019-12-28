@@ -29,13 +29,13 @@ def verify():
         if not user_id:
             flash('That token is invalid. It may have expired. \
             Please request a new one.')
-            return redirect(url_for('index'))
+            return redirect(url_for('auth.index'))
         user = User.query.get(user_id)
         user.is_verified = True
         db.session.commit()
         login_user(user)
-        return redirect(url_for('index'))
-    return redirect(url_for('index'))
+        return redirect(url_for('auth.index'))
+    return redirect(url_for('auth.index'))
 
 
 @bp.route('/login', methods=['GET', 'POST'])
