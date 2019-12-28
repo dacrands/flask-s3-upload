@@ -92,6 +92,36 @@ def test_authorized_request(client):
     assert get_files.status_code == 200
 
 
+def test_verify_user(client):
+    """Test verify User token route"""
+    username = "test"
+    password = "test123"
+
+    verified_user = create_user(username, password, is_verified=False)
+    add_user_to_db(verified_user)
+    verified_user.id = 0
+
+    token = verified_user.get_email_token()
+
+    no_token_rv = client.get('/verify', follow_redirects=True)
+    invalid_rv = client.get('/verify?token={}'.format("token"),
+                            follow_redirects=True)
+    valid_rv = client.get('/verify?token={}'.format(token),
+                          follow_redirects=True)
+
+    assert no_token_rv.status_code == 401
+    assert b'Please log in' in no_token_rv.data
+
+    assert invalid_rv.status_code == 401
+    assert b'Please log in' in invalid_rv.data
+
+    assert valid_rv.status_code == 200
+    assert b'This is a restricted page! <User %b>' % username.encode('utf-8') \
+        in valid_rv.data
+
+    assert verified_user.is_verified is True
+
+
 def test_login_user(client):
     """Test login user"""
 
