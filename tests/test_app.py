@@ -192,6 +192,7 @@ def test_logout_user(client):
     logged_out_rv = client.get('/', follow_redirects=True)
 
     assert logged_in_rv.status_code == 200
+
     assert b'Logged out' in logout.data
 
     assert logged_out_rv.status_code == 401
