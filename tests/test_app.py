@@ -122,6 +122,30 @@ def test_verify_user(client):
     assert verified_user.is_verified is True
 
 
+def test_unverified_login(client):
+    """
+    Test unverified login and resend verification email
+    NOTE: This test will fail if your SendGrid API key
+          is not set
+    """
+    username = "test"
+    password = "test123"
+    email = "test@email.com"
+
+    unverified_user = create_user(username, password, is_verified=False)
+    unverified_user.email = "test@email.com"
+    add_user_to_db(unverified_user)
+
+    unverified_login = client.post('/login', data=dict(
+        username=username,
+        password=password
+    ), follow_redirects=True)
+
+    assert unverified_login.status_code == 401
+    assert b'Please verify your account. We just sent another email' \
+        in unverified_login.data
+
+
 def test_login_user(client):
     """Test login user"""
 
