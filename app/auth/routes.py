@@ -29,7 +29,7 @@ def verify():
         if user_id is False:
             flash('That token is invalid. It may have expired. \
             Please request a new one.')
-            return redirect(url_for('auth.index')), 400
+            return redirect(url_for('auth.index'))
         user = User.query.get(user_id)
         user.is_verified = True
         db.session.commit()
