@@ -149,6 +149,31 @@ def test_login_user(client):
     assert invalid_form.status_code == 400
 
 
+def test_logout_user(client):
+    """Test User logout"""
+    username = "test"
+    password = "test123"
+
+    add_user_to_db(create_user(username, password))
+
+    valid_login = client.post('/login', data=dict(
+        username=username,
+        password=password
+    ), follow_redirects=True)
+
+    logged_in_rv = client.get('/')
+
+    logout = client.get('/logout')
+
+    logged_out_rv = client.get('/', follow_redirects=True)
+
+    assert logged_in_rv.status_code == 200
+    assert b'Logged out' in logout.data
+
+    assert logged_out_rv.status_code == 401
+    assert b'Please log in' in logged_out_rv.data
+
+
 def test_user_token(client):
     """Test verification of User JWT"""
     user = User(id=0)
