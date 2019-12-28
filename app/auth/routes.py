@@ -26,7 +26,7 @@ def verify():
     token = request.args.get('token')
     if token:
         user_id = User.verify_email_token(token)
-        if not user_id:
+        if user_id is False:
             flash('That token is invalid. It may have expired. \
             Please request a new one.')
             return redirect(url_for('auth.index')), 400
