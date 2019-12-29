@@ -46,13 +46,14 @@ def aws_credentials():
 
 
 @pytest.yield_fixture(scope="function")
-def s3_client(aws_credentials):
+def s3_fixture(aws_credentials):
     mocks3 = mock_s3()
     mocks3.start()
 
     client = boto3.client("s3")
+    resource = boto3.resource("s3")
 
-    yield client
+    yield client, resource
 
     mocks3.stop()
 
