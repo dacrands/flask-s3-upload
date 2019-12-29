@@ -1,6 +1,8 @@
 import os
 import tempfile
 import pytest
+import boto3
+from moto import mock_s3
 
 from app import create_app, db
 from app.models import User
@@ -9,6 +11,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 TEST_DB_PATH = os.path.join(basedir, 'test_app.db')
 TEST_DB_URI = 'sqlite:///' + TEST_DB_PATH
+
+TEST_S3_BUCKET = 'somebucket'
 
 
 def create_user(username, password, is_verified=True):
@@ -32,12 +36,34 @@ def add_user_to_db(user):
         raise
 
 
+@pytest.fixture(scope='function')
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+
+
+@pytest.yield_fixture(scope="function")
+def s3_client(aws_credentials):
+    mocks3 = mock_s3()
+    mocks3.start()
+
+    client = boto3.client("s3")
+
+    yield client
+
+    mocks3.stop()
+
+
 @pytest.fixture
 def client():
     app = create_app()
     app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI=TEST_DB_URI
+        SQLALCHEMY_DATABASE_URI=TEST_DB_URI,
+        S3_BUCKET=TEST_S3_BUCKET
     )
 
     with app.test_client() as client:
@@ -197,6 +223,25 @@ def test_logout_user(client):
 
     assert logged_out_rv.status_code == 401
     assert b'Please log in' in logged_out_rv.data
+
+
+def test_delete_user(client, s3_client):
+    """Delete a User and that User's bucket"""
+    s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
+    username = "test"
+    password = "test123"
+
+    add_user_to_db(create_user(username, password))
+
+    valid_login = client.post('/login', data=dict(
+        username=username,
+        password=password
+    ), follow_redirects=True)
+
+    delete_rv = client.delete('/user/delete')
+
+    delete_rv.status_code == 200
+    assert b'User deleted' in delete_rv.data
 
 
 def test_user_token(client):
