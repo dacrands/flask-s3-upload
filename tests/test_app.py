@@ -30,6 +30,7 @@ def create_user(username, password, is_verified=True):
 def add_user_to_db(user):
     try:
         db.session.add(user)
+        db.session.commit()
 
     except Exception as err:
         print("Unexpected error adding User to db: ", err)
