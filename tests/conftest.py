@@ -35,7 +35,7 @@ def s3_client(aws_credentials):
 
 
 @pytest.fixture
-def client():
+def app():
     app = create_app()
     app.config.update(
         TESTING=True,
@@ -43,14 +43,18 @@ def client():
         S3_BUCKET=TEST_S3_BUCKET
     )
 
-    with app.test_client() as client:
-        with app.app_context() as app_context:
-            db.create_all()
-            app_context.push()
+    with app.app_context() as app_context:
+        db.create_all()
+        app_context.push()
 
-            yield client
+    yield app
 
-            db.session.remove()
-            db.drop_all()
-            app_context.pop()
-            os.remove(TEST_DB_PATH)
+    db.session.remove()
+    db.drop_all()
+    app_context.pop()
+    os.remove(TEST_DB_PATH)
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
