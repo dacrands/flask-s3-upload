@@ -10,6 +10,7 @@ from app.auth.email import auth_email, reset_email
 from app.utils import login_required
 
 s3 = boto3.resource('s3')
+s3_client = boto3.client('s3')
 
 # Form Validator Constants
 MIN_USERNAME_LEN = 6
