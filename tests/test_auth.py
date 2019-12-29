@@ -6,25 +6,21 @@ from tests.conftest import create_user, add_user_to_db
 TEST_S3_BUCKET = 'somebucket'
 
 
-
-
 def test_unauthorized_redirect(client):
     """Test unauthorized redirect"""
-
     get_index = client.get('/')
-    get_files = client.get('/files')
-
     assert get_index.status_code == 302
+
+    get_files = client.get('/files')
     assert get_files.status_code == 302
 
 
 def test_unauthorized_request(client):
     """Test unauthorized request"""
-
     get_index = client.get('/', follow_redirects=True)
-    get_files = client.get('/files', follow_redirects=True)
-
     assert get_index.status_code == 401
+
+    get_files = client.get('/files', follow_redirects=True)
     assert get_files.status_code == 401
 
 
@@ -35,15 +31,15 @@ def test_authorized_request(client):
 
     add_user_to_db(create_user(username, password))
 
-    login = client.post('/login', data=dict(
+    login_rv = client.post('/login', data=dict(
         username=username,
         password=password
     ), follow_redirects=True)
 
     get_index = client.get('/')
-    get_files = client.get('/files')
-
     assert get_index.status_code == 200
+
+    get_files = client.get('/files')
     assert get_files.status_code == 200
 
 
@@ -69,7 +65,6 @@ def test_register_user(client, s3_client):
         password1=valid_password,
         password2=valid_password
     ))
-
     assert invalid_username_rv.status_code == 400
     assert b'Username must be between' in invalid_username_rv.data
 
@@ -80,7 +75,6 @@ def test_register_user(client, s3_client):
         password1=invalid_password,
         password2=invalid_password
     ))
-
     assert invalid_password_rv.status_code == 400
     assert b'Password  must be between' in invalid_password_rv.data
 
@@ -91,7 +85,6 @@ def test_register_user(client, s3_client):
         password1=valid_password,
         password2=valid_password_2
     ))
-
     assert mismatched_password_rv.status_code == 400
     assert b'Passwords do not match' in mismatched_password_rv.data
 
@@ -102,7 +95,6 @@ def test_register_user(client, s3_client):
         password1=valid_password,
         password2=valid_password
     ))
-
     assert valid_rv.status_code == 200
     assert b'User added' in valid_rv.data
 
@@ -113,7 +105,6 @@ def test_register_user(client, s3_client):
         password1=valid_password,
         password2=valid_password
     ))
-
     assert b'Username or email already exists' in email_exists_rv.data
     assert email_exists_rv.status_code == 400
 
@@ -124,7 +115,6 @@ def test_register_user(client, s3_client):
         password1=valid_password,
         password2=valid_password
     ))
-
     assert b'Username or email already exists' in user_exists_rv.data
     assert user_exists_rv.status_code == 400
 
@@ -141,22 +131,20 @@ def test_verify_user(client):
     token = verified_user.get_email_token()
 
     no_token_rv = client.get('/verify', follow_redirects=True)
-    invalid_rv = client.get('/verify?token={}'.format("token"),
-                            follow_redirects=True)
-    valid_rv = client.get('/verify?token={}'.format(token),
-                          follow_redirects=True)
-
     assert no_token_rv.status_code == 401
     assert b'Please log in' in no_token_rv.data
 
+    invalid_rv = client.get('/verify?token={}'.format("token"),
+                            follow_redirects=True)
     assert invalid_rv.status_code == 401
     assert b'Please log in' in invalid_rv.data
 
+    valid_rv = client.get('/verify?token={}'.format(token),
+                          follow_redirects=True)
     assert valid_rv.status_code == 200
+    assert verified_user.is_verified is True
     assert b'This is a restricted page! <User %b>' % username.encode('utf-8') \
         in valid_rv.data
-
-    assert verified_user.is_verified is True
 
 
 def test_unverified_login(client):
@@ -171,16 +159,17 @@ def test_unverified_login(client):
 
     unverified_user = create_user(username, password, is_verified=False)
     unverified_user.email = "test@email.com"
+
     add_user_to_db(unverified_user)
 
-    unverified_login = client.post('/login', data=dict(
+    unverified_login_rv = client.post('/login', data=dict(
         username=username,
         password=password
     ), follow_redirects=True)
 
-    assert unverified_login.status_code == 401
+    assert unverified_login_rv.status_code == 401
     assert b'Please verify your account. We just sent another email' \
-        in unverified_login.data
+        in unverified_login_rv.data
 
 
 def test_login_user(client):
@@ -191,23 +180,22 @@ def test_login_user(client):
 
     add_user_to_db(create_user(username, password))
 
-    valid_login = client.post('/login', data=dict(
+    valid_login_rv = client.post('/login', data=dict(
         username=username,
         password=password
     ), follow_redirects=True)
+    assert valid_login_rv.status_code == 200
 
-    invalid_login = client.post('/login', data=dict(
+    invalid_login_rv = client.post('/login', data=dict(
         username="baduser",
         password="badpass"
     ), follow_redirects=True)
+    assert invalid_login_rv.status_code == 400
 
-    invalid_form = client.post('/login', data=dict(
+    invalid_form_rv = client.post('/login', data=dict(
         username=username
     ), follow_redirects=True)
-
-    assert valid_login.status_code == 200
-    assert invalid_login.status_code == 400
-    assert invalid_form.status_code == 400
+    assert invalid_form_rv.status_code == 400
 
 
 def test_logout_user(client):
@@ -217,21 +205,18 @@ def test_logout_user(client):
 
     add_user_to_db(create_user(username, password))
 
-    valid_login = client.post('/login', data=dict(
+    valid_login_rv = client.post('/login', data=dict(
         username=username,
         password=password
     ), follow_redirects=True)
 
     logged_in_rv = client.get('/')
-
-    logout = client.get('/logout')
-
-    logged_out_rv = client.get('/', follow_redirects=True)
-
     assert logged_in_rv.status_code == 200
 
-    assert b'Logged out' in logout.data
+    logout_rv = client.get('/logout')
+    assert b'Logged out' in logout_rv.data
 
+    logged_out_rv = client.get('/', follow_redirects=True)
     assert logged_out_rv.status_code == 401
     assert b'Please log in' in logged_out_rv.data
 
@@ -244,14 +229,14 @@ def test_delete_user(client, s3_client):
 
     add_user_to_db(create_user(username, password))
 
-    valid_login = client.post('/login', data=dict(
+    valid_login_rv = client.post('/login', data=dict(
         username=username,
         password=password
     ), follow_redirects=True)
 
     delete_rv = client.delete('/user/delete')
 
-    delete_rv.status_code == 200
+    assert delete_rv.status_code == 200
     assert b'User deleted' in delete_rv.data
 
 
