@@ -1,15 +1,5 @@
-import os
-import pytest
-import boto3
-from moto import mock_s3
-
-from app import create_app, db
+from app import db
 from app.models import User
-
-basedir = os.path.abspath(os.path.dirname(__file__))
-
-TEST_DB_PATH = os.path.join(basedir, 'test_app.db')
-TEST_DB_URI = 'sqlite:///' + TEST_DB_PATH
 
 TEST_S3_BUCKET = 'somebucket'
 
@@ -34,49 +24,6 @@ def add_user_to_db(user):
     except Exception as err:
         print("Unexpected error adding User to db: ", err)
         raise
-
-
-@pytest.fixture(scope='function')
-def aws_credentials():
-    """Mocked AWS Credentials for moto."""
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
-
-
-@pytest.yield_fixture(scope="function")
-def s3_client(aws_credentials):
-    mocks3 = mock_s3()
-    mocks3.start()
-
-    client = boto3.client("s3")
-
-    yield client
-
-    mocks3.stop()
-
-
-@pytest.fixture
-def client():
-    app = create_app()
-    app.config.update(
-        TESTING=True,
-        SQLALCHEMY_DATABASE_URI=TEST_DB_URI,
-        S3_BUCKET=TEST_S3_BUCKET
-    )
-
-    with app.test_client() as client:
-        with app.app_context() as app_context:
-            db.create_all()
-            app_context.push()
-
-            yield client
-
-            db.session.remove()
-            db.drop_all()
-            app_context.pop()
-            os.remove(TEST_DB_PATH)
 
 
 def test_unauthorized_redirect(client):
