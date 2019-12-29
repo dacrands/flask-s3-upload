@@ -1,29 +1,11 @@
 from app import db
 from app.models import User
 
+from tests.conftest import create_user, add_user_to_db
+
 TEST_S3_BUCKET = 'somebucket'
 
 
-def create_user(username, password, is_verified=True):
-    try:
-        user = User(username=username)
-        user.set_password(password)
-        user.is_verified = is_verified
-        return user
-
-    except Exception as err:
-        print("Unexpected error creating User: ", err)
-        raise
-
-
-def add_user_to_db(user):
-    try:
-        db.session.add(user)
-        db.session.commit()
-
-    except Exception as err:
-        print("Unexpected error adding User to db: ", err)
-        raise
 
 
 def test_unauthorized_redirect(client):
