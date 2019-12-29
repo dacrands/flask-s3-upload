@@ -4,6 +4,7 @@ import boto3
 from moto import mock_s3
 
 from app import create_app, db
+from app.models import User
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -11,6 +12,28 @@ TEST_DB_PATH = os.path.join(basedir, 'test_app.db')
 TEST_DB_URI = 'sqlite:///' + TEST_DB_PATH
 
 TEST_S3_BUCKET = 'somebucket'
+
+
+def create_user(username, password, is_verified=True):
+    try:
+        user = User(username=username)
+        user.set_password(password)
+        user.is_verified = is_verified
+        return user
+
+    except Exception as err:
+        print("Unexpected error creating User: ", err)
+        raise
+
+
+def add_user_to_db(user):
+    try:
+        db.session.add(user)
+        db.session.commit()
+
+    except Exception as err:
+        print("Unexpected error adding User to db: ", err)
+        raise
 
 
 @pytest.fixture(scope='function')
