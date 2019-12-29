@@ -119,6 +119,88 @@ def test_authorized_request(client):
     assert get_files.status_code == 200
 
 
+def test_register_user(client, s3_client):
+    """Test register User"""
+    s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
+
+    valid_username = "test1234"
+    valid_username_2 = "test4567"
+    invalid_username = "shorts"
+
+    valid_password = "ThisIsAValidPassword"
+    valid_password_2 = "ThisIsAValidPassword2"
+    invalid_password = "tooshort"
+
+    valid_email = "test@email.com"
+    valid_email_2 = "test2@email.com"
+
+    # Username does not meet length requirement
+    invalid_username_rv = client.post('/register', data=dict(
+        username=invalid_username,
+        email=valid_email_2,
+        password1=valid_password,
+        password2=valid_password
+    ))
+
+    assert invalid_username_rv.status_code == 400
+    assert b'Username must be between' in invalid_username_rv.data
+
+    # Password does not meet length requirement
+    invalid_password_rv = client.post('/register', data=dict(
+        username=valid_username,
+        email=valid_email_2,
+        password1=invalid_password,
+        password2=invalid_password
+    ))
+
+    assert invalid_password_rv.status_code == 400
+    assert b'Password  must be between' in invalid_password_rv.data
+
+    # Passwords are valid but do not match
+    mismatched_password_rv = client.post('/register', data=dict(
+        username=valid_username,
+        email=valid_email_2,
+        password1=valid_password,
+        password2=valid_password_2
+    ))
+
+    assert mismatched_password_rv.status_code == 400
+    assert b'Passwords do not match' in mismatched_password_rv.data
+
+    # Valid registration
+    valid_rv = client.post('/register', data=dict(
+        username=valid_username,
+        email=valid_email,
+        password1=valid_password,
+        password2=valid_password
+    ))
+
+    assert valid_rv.status_code == 200
+    assert b'User added' in valid_rv.data
+
+    # New user's email already in db
+    email_exists_rv = client.post('/register', data=dict(
+        username=valid_username_2,
+        email=valid_email,
+        password1=valid_password,
+        password2=valid_password
+    ))
+
+    assert b'Username or email already exists' in email_exists_rv.data
+    assert email_exists_rv.status_code == 400
+
+    # New user's username already in db
+    user_exists_rv = client.post('/register', data=dict(
+        username=valid_username,
+        email=valid_email_2,
+        password1=valid_password,
+        password2=valid_password
+    ))
+
+    assert b'Username or email already exists' in user_exists_rv.data
+    assert user_exists_rv.status_code == 400
+
+
 def test_verify_user(client):
     """Test verify User token route"""
     username = "test"
