@@ -43,8 +43,9 @@ def test_authorized_request(client):
     assert get_files.status_code == 200
 
 
-def test_register_user(client, s3_client):
+def test_register_user(client, s3_fixture):
     """Test register User"""
+    s3_client = s3_fixture[0]
     s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
 
     valid_username = "test1234"
@@ -221,8 +222,9 @@ def test_logout_user(client):
     assert b'Please log in' in logged_out_rv.data
 
 
-def test_delete_user(client, s3_client):
+def test_delete_user(client, s3_fixture):
     """Delete a User and that User's bucket"""
+    s3_client = s3_fixture[0]
     s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
     username = "test"
     password = "test123"
