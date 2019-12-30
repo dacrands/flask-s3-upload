@@ -99,7 +99,7 @@ def file(file_id):
             Key=file.key
         )
     except ClientError:
-        return jsonify({'msg': 'File note in your folder'})
+        return jsonify({'msg': 'File not in your folder'})
 
     url = s3_client.generate_presigned_url(
         ClientMethod='get_object',
