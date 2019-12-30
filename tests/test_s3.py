@@ -1,10 +1,38 @@
 import io
 
-from app.models import User
+from app import db
+from app.models import User, File
 
 from tests.conftest import create_user, add_user_to_db
 
 TEST_S3_BUCKET = 'somebucket'
+
+
+def create_file(name, username, user_id,
+                id=0, desc=""):
+    try:
+        file = File(
+            id=id,
+            name=name,
+            key="{0}/{1}".format(username, name),
+            body=desc
+        )
+        file.user_id = user_id
+        return file
+
+    except Exception as err:
+        print("Unexpected error creating File: ", err)
+        raise
+
+
+def add_file_to_db(file):
+    try:
+        db.session.add(file)
+        db.session.commit()
+
+    except Exception as err:
+        print("Unexpected error adding User to db: ", err)
+        raise
 
 
 def test_upload_file(client, s3_fixture):
@@ -100,3 +128,61 @@ def test_upload_file(client, s3_fixture):
         follow_redirects=True)
     assert file_exists_rv.status_code == 400
     assert b'You already have a file with that name' in file_exists_rv.data
+
+
+def test_get_file_by_id(client, s3_fixture):
+    username = 'testuser'
+    user_id = 0
+    file_id = 0
+    file_id_2 = 1
+    invalid_file_id = 9
+    password = 'testpass'
+    file_name = 'test.pdf'
+    file_name_2 = 'test2.pdf'
+    file_desc = 'test'
+
+    (s3_client, s3) = s3_fixture
+    s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
+
+    user = create_user(username, password)
+    user.id = user_id
+    add_user_to_db(user)
+
+    file = create_file(
+        name=file_name,
+        id=file_id,
+        desc=file_desc,
+        username=username,
+        user_id=user_id
+    )
+
+    file_2 = create_file(
+        name=file_name_2,
+        id=file_id_2,
+        username=username,
+        user_id=user_id
+    )
+
+    add_file_to_db(file)
+    add_file_to_db(file_2)
+
+    s3.Bucket(TEST_S3_BUCKET).put_object(
+        Key=file.key,
+        Body=io.BytesIO(b'this is a test')
+    )
+
+    client.post('/login', data=dict(
+        username=username,
+        password=password
+    ))
+
+    invalid_file_id_rv = client.get('/files/{}'.format(invalid_file_id))
+    assert b'File does not exist' in invalid_file_id_rv.data
+
+    file_not_in_bucket_rv = client.get('/files/{}'.format(file_id_2))
+    assert b'File not in your folder' in file_not_in_bucket_rv.data
+
+    valid_get_rv = client.get('/files/{}'.format(file_id))
+    assert valid_get_rv.status_code == 200
+    assert b'{"file":{"body":"%b"' % file_desc.encode('utf-8') \
+        in valid_get_rv.data
