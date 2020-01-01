@@ -150,14 +150,12 @@ def delete_file(file_id):
     if not file:
         return jsonify({'msg': 'File does not exist'})
 
-    try:
-        res_object = s3_client.delete_object(
-            Bucket=current_app.config['S3_BUCKET'],
-            Key=file.key
-        )
-    except ClientError:
-        return jsonify({'msg': 'File note in your folder'})
-
     db.session.delete(file)
     db.session.commit()
+
+    res_object = s3_client.delete_object(
+        Bucket=current_app.config['S3_BUCKET'],
+        Key=file.key
+    )
+
     return jsonify({'msg': 'File removed'})
