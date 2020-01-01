@@ -134,11 +134,11 @@ def test_get_file_by_id(client, s3_fixture):
     username = 'testuser'
     user_id = 0
     file_id = 0
-    file_id_2 = 1
+    file_2_id = 1
     invalid_file_id = 9
     password = 'testpass'
     file_name = 'test.pdf'
-    file_name_2 = 'test2.pdf'
+    file_2_name = 'test2.pdf'
     file_desc = 'test'
 
     (s3_client, s3) = s3_fixture
@@ -157,8 +157,8 @@ def test_get_file_by_id(client, s3_fixture):
     )
 
     file_2 = create_file(
-        name=file_name_2,
-        id=file_id_2,
+        name=file_2_name,
+        id=file_2_id,
         username=username,
         user_id=user_id
     )
@@ -179,10 +179,57 @@ def test_get_file_by_id(client, s3_fixture):
     invalid_file_id_rv = client.get('/files/{}'.format(invalid_file_id))
     assert b'File does not exist' in invalid_file_id_rv.data
 
-    file_not_in_bucket_rv = client.get('/files/{}'.format(file_id_2))
+    file_not_in_bucket_rv = client.get('/files/{}'.format(file_2_id))
     assert b'File not in your folder' in file_not_in_bucket_rv.data
 
     valid_get_rv = client.get('/files/{}'.format(file_id))
     assert valid_get_rv.status_code == 200
     assert b'{"file":{"body":"%b"' % file_desc.encode('utf-8') \
         in valid_get_rv.data
+
+
+def test_delete_file_by_id(client, s3_fixture):
+    username = 'testuser'
+    user_id = 0
+    password = 'testpass'
+    file_id = 0
+    file_2_id = 1
+    invalid_file_id = 9
+    file_name = 'test.pdf'
+    file_2_name = 'test2.pdf'
+
+    (s3_client, s3) = s3_fixture
+    s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
+
+    add_user_to_db(create_user(username, password))
+
+    file = create_file(
+        name=file_name,
+        id=file_id,
+        username=username,
+        user_id=user_id
+    )
+
+    file_2 = create_file(
+        name=file_2_name,
+        id=file_2_id,
+        username=username,
+        user_id=user_id
+    )
+
+    add_file_to_db(file)
+    add_file_to_db(file_2)
+
+    client.post('/login', data=dict(
+        username=username,
+        password=password
+    ))
+
+    invalid_file_id_rv = client.delete(
+        '/files/{}/delete'.format(invalid_file_id)
+    )
+    assert b'File does not exist' in invalid_file_id_rv.data
+
+    delete_file_rv = client.delete('/files/{}/delete'.format(file_id))
+    assert delete_file_rv.status_code == 200
+    assert b'File removed' in delete_file_rv.data
