@@ -63,21 +63,18 @@ def files():
         if not allowed_file(file.filename):
             return jsonify({'msg': 'Invalid file type'}), 400
 
-        if file:
-            key_str = "{0}/{1}".format(current_user.username, filename)
-            s3.Bucket(current_app.config['S3_BUCKET']).put_object(
-                Key=key_str,
-                Body=request.files['file'].stream.read()
-            )
-            # Add a new file
-            new_file = File(name=filename, body=file_text, date=file_date,
-                            key=key_str, author=current_user)
-            db.session.add(new_file)
-            db.session.commit()
+        key_str = "{0}/{1}".format(current_user.username, filename)
+        s3.Bucket(current_app.config['S3_BUCKET']).put_object(
+            Key=key_str,
+            Body=request.files['file'].stream.read()
+        )
+        # Add a new file
+        new_file = File(name=filename, body=file_text, date=file_date,
+                        key=key_str, author=current_user)
+        db.session.add(new_file)
+        db.session.commit()
 
-            return jsonify({'msg': 'Uploaded {0}'.format(filename)})
-
-        return jsonify({'msg': 'Something went wrong'}), 400
+        return jsonify({'msg': 'Uploaded {0}'.format(filename)})        
 
     user_files = [{'name': file.name, 'body': file.body, "id": file.id}
                   for file in current_user.files]
