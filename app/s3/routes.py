@@ -130,7 +130,7 @@ def edit_file(file_id):
 
         if len(file_text) > 130:
             return jsonify({
-                'msg': 'File description must be less than 140 characters'
+                'msg': 'File description must be less than 130 characters'
             }), 400
 
         file.body = file_text
