@@ -135,7 +135,7 @@ def edit_file(file_id):
 
         file.body = file_text
         db.session.commit()
-        return jsonify({'msg': 'Filed edited!'})
+        return jsonify({'msg': 'File edited!'})
 
     return jsonify({'err': 'You can not do that'})
 
