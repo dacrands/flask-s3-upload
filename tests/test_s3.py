@@ -188,6 +188,64 @@ def test_get_file_by_id(client, s3_fixture):
         in valid_get_rv.data
 
 
+def test_edit_file_by_id(client, s3_fixture):
+    username = 'testuser'
+    user_id = 0
+    password = 'testpass'
+
+    file_name = 'test.pdf'
+    file_id = 0
+    file_desc = "This will change."
+    file_desc_changed = "This is changed."
+    file_desc_too_long = "t" * 131
+    invalid_file_id = 9
+
+    file = create_file(
+        name=file_name,
+        id=file_id,
+        username=username,
+        user_id=user_id,
+        desc=file_desc
+    )
+
+    add_user_to_db(create_user(username, password))
+    add_file_to_db(file)
+
+    client.post('/login', data=dict(
+        username=username,
+        password=password
+    ))
+
+    invalid_file_id_rv = client.patch(
+        '/files/{}/edit'.format(invalid_file_id)
+    )
+    assert b'File does not exist' in invalid_file_id_rv.data
+
+    missing_form_rv = client.patch(
+        '/files/{}/edit'.format(file_id)
+    )
+    assert b'Missing part of your form' in missing_form_rv.data
+    assert missing_form_rv.status_code == 400
+
+    too_long_desc_rv = client.patch(
+        '/files/{}/edit'.format(file_id), data=dict(
+            body=file_desc_too_long
+        )
+    )
+    assert b'File description must be less than 130 characters' \
+        in too_long_desc_rv.data
+    assert too_long_desc_rv.status_code == 400
+
+    file_edit_rv = client.patch(
+        '/files/{}/edit'.format(file_id), data=dict(
+            body=file_desc_changed
+        )
+    )
+    assert file.body == file_desc_changed
+    assert b'File edited!' in file_edit_rv.data
+    assert file_edit_rv.status_code == 200
+
+
 def test_delete_file_by_id(client, s3_fixture):
     username = 'testuser'
     user_id = 0
