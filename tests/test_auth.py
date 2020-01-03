@@ -59,6 +59,15 @@ def test_register_user(client, s3_fixture):
     valid_email = "test@email.com"
     valid_email_2 = "test2@email.com"
 
+    # Missing form value
+    missing_form_item_rv = client.post('/register', data=dict(
+        username=invalid_username,
+        email=valid_email_2,
+        password1=valid_password
+    ))
+    assert missing_form_item_rv.status_code == 400
+    assert b'Missing part of your form' in missing_form_item_rv.data
+
     # Username does not meet length requirement
     invalid_username_rv = client.post('/register', data=dict(
         username=invalid_username,
