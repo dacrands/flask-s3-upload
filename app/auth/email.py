@@ -1,28 +1,33 @@
-import sendgrid
-import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from flask import current_app
-from sendgrid.helpers.mail import *
 
 
-def auth_email(from_email, subject, to_email, content):
-    sg = sendgrid.SendGridAPIClient(
-        apikey=current_app.config['SENDGRID_API_KEY'])
-    from_email = Email("justfiles-verify@davidcrandall.com")
-    to_email = Email(to_email)
-    content = Content("text/html", content)
-    mail = Mail(from_email, subject, to_email, content)
-    response = sg.client.mail.send.post(request_body=mail.get())
+def auth_email(_from_email, _subject, _to_email, _content):
+    message = Mail(
+        from_email=_from_email,
+        to_emails=_to_email,
+        subject=_subject,
+        html_content=_content
+    )
+    try:
+        sg = SendGridAPIClient(current_app.config['SENDGRID_API_KEY'])
+        response = sg.send(message)
+        return response.status_code
+    except Exception as e:
+        print(str(e))
 
-    return response.status_code
 
-
-def reset_email(from_email, subject, to_email, content):
-    sg = sendgrid.SendGridAPIClient(
-        apikey=current_app.config['SENDGRID_API_KEY'])
-    from_email = Email("justfiles-reset@davidcrandall.com")
-    to_email = Email(to_email)
-    content = Content("text/html", content)
-    mail = Mail(from_email, subject, to_email, content)
-    response = sg.client.mail.send.post(request_body=mail.get())
-
-    return response.status_code
+def reset_email(_from_email, _subject, _to_email, _content):
+    message = Mail(
+        from_email=_from_email,
+        to_emails=_to_email,
+        subject=_subject,
+        html_content=_content
+    )
+    try:
+        sg = SendGridAPIClient(current_app.config['SENDGRID_API_KEY'])
+        response = sg.send(message)
+        return response.status_code
+    except Exception as e:
+        print(str(e))
