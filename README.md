@@ -1,5 +1,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/dacrands/s3-upload-backend/badge.svg?branch=master)](https://coveralls.io/github/dacrands/s3-upload-backend?branch=master)
 
+[![Build Status](https://travis-ci.org/dacrands/s3-upload-backend.svg?branch=master)](https://travis-ci.org/dacrands/s3-upload-backend)
 
 # Just Files API
 Amazon S3 API with user-authentication and SendGrid email-support built with Flask.
