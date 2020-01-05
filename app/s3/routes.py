@@ -16,6 +16,10 @@ from app.utils import login_required, allowed_file
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
 
+# Form Validator for max file description length
+# Must be less than column size for File body in models.py
+MAX_FILE_DESC_LEN = 130
+
 
 @bp.route('/')
 @login_required
@@ -55,9 +59,10 @@ def files():
                         File names must be unique'
             }), 400
 
-        if len(file_text) > 130:
+        if len(file_text) > MAX_FILE_DESC_LEN:
             return jsonify({
-                'msg': 'File description must be less than 130 characters'
+                'msg': 'File description must be less than {} characters'
+                       .format(MAX_FILE_DESC_LEN)
             }), 400
 
         if not allowed_file(file.filename):
@@ -74,7 +79,7 @@ def files():
         db.session.add(new_file)
         db.session.commit()
 
-        return jsonify({'msg': 'Uploaded {0}'.format(filename)})        
+        return jsonify({'msg': 'Uploaded {0}'.format(filename)})
 
     user_files = [{'name': file.name, 'body': file.body, "id": file.id}
                   for file in current_user.files]
@@ -128,9 +133,10 @@ def edit_file(file_id):
         except KeyError:
             return jsonify({'err': 'Missing part of your form'}), 400
 
-        if len(file_text) > 130:
+        if len(file_text) > MAX_FILE_DESC_LEN:
             return jsonify({
-                'msg': 'File description must be less than 130 characters'
+                'msg': 'File description must be less than {} characters'
+                       .format(MAX_FILE_DESC_LEN)
             }), 400
 
         file.body = file_text
