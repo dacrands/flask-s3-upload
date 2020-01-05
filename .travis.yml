@@ -13,6 +13,6 @@ matrix:
 install: 
   # Get newer pip and whell for binary caching support
   - pip install --upgrade pip wheel
-  - pip install -U -r requirements-test.txt
+  - pip install -U -r requirements.txt
 script:
   - python -m pytest tests
