@@ -139,8 +139,7 @@ def test_get_file_by_id(client, s3_fixture):
     password = 'testpass'
     file_name = 'test.pdf'
     file_2_name = 'test2.pdf'
-    file_desc = 'test'
-    valid_res_str = '"body": "test"'
+    file_desc = 'This is a test file description'
 
     (s3_client, s3) = s3_fixture
     s3_client.create_bucket(Bucket=TEST_S3_BUCKET)
@@ -185,7 +184,7 @@ def test_get_file_by_id(client, s3_fixture):
 
     valid_get_rv = client.get('/files/{}'.format(file_id))
     assert valid_get_rv.status_code == 200
-    assert valid_res_str in valid_get_rv.data.decode("utf-8")
+    assert file_desc in valid_get_rv.data.decode("utf-8")
 
 
 def test_edit_file_by_id(client, s3_fixture):
