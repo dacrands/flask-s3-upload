@@ -2,8 +2,9 @@ import boto3
 from flask import current_app, render_template, flash, redirect, \
                     url_for, request, jsonify
 from flask_login import login_user, logout_user, current_user
+from flask_wtf import csrf as _csrf
 
-from app import db
+from app import db, csrf
 from app.models import User
 from app.auth import bp
 from app.auth.email import auth_email, reset_email
@@ -39,6 +40,7 @@ def verify():
     return redirect(url_for('auth.index'))
 
 
+@csrf.exempt
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     """
@@ -74,7 +76,9 @@ def login():
             }), 401
 
         login_user(user)
-        return jsonify({'username': current_user.username, 'msg': 'Logged in'})
+        return jsonify({'username': current_user.username,
+                        'msg': 'Logged in',
+                        'csrf': _csrf.generate_csrf()})
 
     return jsonify({'err': 'Please log in'}), 401
 
@@ -89,6 +93,7 @@ def logout():
     return jsonify({'msg': 'Logged out'})
 
 
+@csrf.exempt
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     """
