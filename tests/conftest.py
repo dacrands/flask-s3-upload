@@ -64,7 +64,8 @@ def app():
     app.config.update(
         TESTING=True,
         SQLALCHEMY_DATABASE_URI=TEST_DB_URI,
-        S3_BUCKET=TEST_S3_BUCKET
+        S3_BUCKET=TEST_S3_BUCKET,
+        WTF_CSRF_ENABLED=False
     )
 
     with app.app_context() as app_context:
